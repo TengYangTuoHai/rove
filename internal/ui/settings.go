@@ -34,13 +34,13 @@ var (
 // settingsSectionNames labels every section, in the nav's order.
 var settingsSectionNames = map[string]string{
 	"look": "Look", "terminal": "Terminal", "machines": "Machines",
-	"alerts": "Alerts",
+	"alerts": "Alerts", "keys": "Keyboard shortcuts",
 }
 
 // settingsSectionIcons is the icon each section's rows and results carry.
 var settingsSectionIcons = map[string]string{
 	"look": "sun", "terminal": "terminal", "machines": "server",
-	"alerts": "bell",
+	"alerts": "bell", "keys": "command",
 }
 
 // settingKeywords are what a person might type to find a setting whose name
@@ -104,6 +104,8 @@ func (a *App) settingsEntries() []settingsEntry {
 
 		entry("terminal", "Clipboard", "Let terminal programs write the clipboard.", a.tr(onOff(s.Clipboard))),
 		entry("terminal", "Minimum contrast", "Raise terminal text contrast. 1.0 leaves program colors alone.", fmt.Sprintf("%.1f", s.MinContrast)),
+
+		entry("keys", "Keyboard shortcuts", "Change the keys for app actions.", a.tr("Manage")),
 
 		entry("machines", "Machines", "Add, connect and remove the computers Herdr reaches over ssh.", a.tr("Manage")),
 
@@ -351,6 +353,7 @@ func (a *App) settingsNav(c *ui.Context) {
 			})
 			if row.Clicked() {
 				a.settings.Section = id
+				a.settings.KeyAction = ""
 				a.settings.SearchOpen = false
 				a.settings.Search = ""
 				a.Repaint()
@@ -360,6 +363,7 @@ func (a *App) settingsNav(c *ui.Context) {
 		navGroup(a.tr("App"))
 		navRow("look", a.tr("Look"), "sun")
 		navRow("terminal", a.tr("Terminal"), "terminal")
+		navRow("keys", a.tr("Keyboard shortcuts"), "command")
 		navGroup("Herdr")
 		navRow("machines", a.tr("Machines"), "server")
 		navRow("alerts", a.tr("Alerts"), "bell")
@@ -471,6 +475,8 @@ func (a *App) settingsSearchResults(c *ui.Context) {
 // settingsSection draws the chosen section.
 func (a *App) settingsSection(c *ui.Context) {
 	switch a.settings.Section {
+	case "keys":
+		a.settingsKeys(c)
 	case "terminal":
 		a.settingsTerminal(c)
 	case "machines":

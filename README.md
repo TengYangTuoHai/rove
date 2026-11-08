@@ -309,11 +309,17 @@ themes (including installed files in Ghostty's themes folder). The chrome
 and every open terminal follow the chosen palette. Choose “Theme” under
 Accent to use the palette's accent, or pick an override.
 
-Keys are read from `~/.config/herdr-mygo/keys.json` (or `$XDG_CONFIG_HOME`,
-or `$HERDR_MYGO_HOME`, else the shipped `keys.macos.json` / `keys.json`), so
-`cmd-shift-p` opens the palette,
-`cmd-d` splits, `cmd-1`… select tabs, and so on. Terminals get every other
-key, through Ghostty's key protocol handling in MyGo's terminal plugin.
+Settings → Keyboard shortcuts lets you search app actions, record, add or
+remove shortcuts, and warns about conflicts. Changes take effect immediately.
+The defaults on Linux include `Super+D` to split right and `Super+Shift+D`
+to split down, alongside `Ctrl+Shift+O` and `Ctrl+Shift+E`. On macOS,
+`Cmd+D` and `Cmd+Shift+D` split right and down. Terminal copy and paste use
+separate shortcuts.
+
+Shortcut changes are saved to `~/.config/herdr-mygo/keys.json` (or under
+`$XDG_CONFIG_HOME` or `$HERDR_MYGO_HOME`). Without a custom file, Herdr uses
+the shipped platform defaults. Terminals receive other keys through Ghostty's
+key protocol handling in MyGo's terminal plugin.
 
 ## What works
 
@@ -450,6 +456,11 @@ On Windows PowerShell, set `$env:ALERTS_NATIVE_NOTIFICATIONS='1'` first, then ru
 that `go test` command. This requires a logged-in desktop with notification
 banners enabled; passing the command confirms service acceptance, while the
 visible banners must be checked on that desktop.
+
+## License
+
+Herdr MyGo is licensed under the [MIT License](LICENSE). Third-party assets and
+dependencies retain their own licenses and notices.
 
 ## Research
 

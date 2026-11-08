@@ -130,6 +130,12 @@ type settingsState struct {
 	Search     string
 	SearchOpen bool
 	SearchAt   int
+
+	KeySearch  string
+	KeyAction  string
+	KeySection string
+	KeyOld     string
+	KeyError   string
 }
 
 // defaultSettings is the state before the person changes anything.
@@ -378,6 +384,9 @@ func (a *App) ToggleOverlay(name string) {
 
 // CloseOverlay closes the overlay on top.
 func (a *App) CloseOverlay() {
+	if a.overlay == "settings" {
+		a.settings.KeyAction, a.settings.KeyError = "", ""
+	}
 	if a.overlay == "close-confirm" {
 		a.closing = closeState{}
 	}

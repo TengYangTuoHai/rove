@@ -186,11 +186,13 @@ func (a *App) View(c *ui.Context) {
 	c.SetZoom(a.Zoom)
 	w, h := c.Size()
 	a.W, a.H = w, h
-	a.keys(c)
-	if a.overlay == "settings" && c.Shortcut(ui.Cmd, ui.KeyF) {
+	if a.overlay != "settings" || a.settings.KeyAction == "" {
+		a.keys(c)
+	}
+	if a.overlay == "settings" && a.settings.KeyAction == "" && c.Shortcut(ui.Cmd, ui.KeyF) {
 		a.openSettingsSearch()
 	}
-	if a.overlay != "" && a.overlay != "peek" && !(a.overlay == "machine-add" && a.addMachineSnapshot().term != "") && c.Shortcut(0, ui.KeyEscape) {
+	if a.overlay != "" && a.overlay != "peek" && !(a.overlay == "settings" && a.settings.KeyAction != "") && !(a.overlay == "machine-add" && a.addMachineSnapshot().term != "") && c.Shortcut(0, ui.KeyEscape) {
 		if a.overlay == "settings" && a.settings.ThemePicker != 0 {
 			a.settings.ThemePicker = 0
 		} else if a.overlay == "settings" && a.settings.SearchOpen {

@@ -2131,6 +2131,86 @@ func (msgs Messages) CloseWindow() string {
 	return Catalog.Format(msgs.locale, "closeWindow", nil)
 }
 
+// KeyboardShortcuts says "Keyboard shortcuts"
+// in the language the app shows.
+func KeyboardShortcuts() string { return In(i18n.Locale()).KeyboardShortcuts() }
+
+// KeyboardShortcuts says "Keyboard shortcuts"
+// in the language of msgs.
+func (msgs Messages) KeyboardShortcuts() string {
+	return Catalog.Format(msgs.locale, "keyboardShortcuts", nil)
+}
+
+// KeyboardShortcutsAbout says "Change the keys for app actions."
+// in the language the app shows.
+func KeyboardShortcutsAbout() string { return In(i18n.Locale()).KeyboardShortcutsAbout() }
+
+// KeyboardShortcutsAbout says "Change the keys for app actions."
+// in the language of msgs.
+func (msgs Messages) KeyboardShortcutsAbout() string {
+	return Catalog.Format(msgs.locale, "keyboardShortcutsAbout", nil)
+}
+
+// KeyboardShortcutsHelp says "Click a shortcut to change it, or add another. Press Escape to cancel."
+// in the language the app shows.
+func KeyboardShortcutsHelp() string { return In(i18n.Locale()).KeyboardShortcutsHelp() }
+
+// KeyboardShortcutsHelp says "Click a shortcut to change it, or add another. Press Escape to cancel."
+// in the language of msgs.
+func (msgs Messages) KeyboardShortcutsHelp() string {
+	return Catalog.Format(msgs.locale, "keyboardShortcutsHelp", nil)
+}
+
+// KeyboardShortcutsNote says "These shortcuts control Herdr. Terminal copy and paste use their own keys."
+// in the language the app shows.
+func KeyboardShortcutsNote() string { return In(i18n.Locale()).KeyboardShortcutsNote() }
+
+// KeyboardShortcutsNote says "These shortcuts control Herdr. Terminal copy and paste use their own keys."
+// in the language of msgs.
+func (msgs Messages) KeyboardShortcutsNote() string {
+	return Catalog.Format(msgs.locale, "keyboardShortcutsNote", nil)
+}
+
+// SearchShortcuts says "Search shortcuts…"
+// in the language the app shows.
+func SearchShortcuts() string { return In(i18n.Locale()).SearchShortcuts() }
+
+// SearchShortcuts says "Search shortcuts…"
+// in the language of msgs.
+func (msgs Messages) SearchShortcuts() string {
+	return Catalog.Format(msgs.locale, "searchShortcuts", nil)
+}
+
+// NoShortcutsFound says "No shortcuts found."
+// in the language the app shows.
+func NoShortcutsFound() string { return In(i18n.Locale()).NoShortcutsFound() }
+
+// NoShortcutsFound says "No shortcuts found."
+// in the language of msgs.
+func (msgs Messages) NoShortcutsFound() string {
+	return Catalog.Format(msgs.locale, "noShortcutsFound", nil)
+}
+
+// ShortcutAlreadyInUse says "Shortcut already in use"
+// in the language the app shows.
+func ShortcutAlreadyInUse() string { return In(i18n.Locale()).ShortcutAlreadyInUse() }
+
+// ShortcutAlreadyInUse says "Shortcut already in use"
+// in the language of msgs.
+func (msgs Messages) ShortcutAlreadyInUse() string {
+	return Catalog.Format(msgs.locale, "shortcutAlreadyInUse", nil)
+}
+
+// PressShortcut says "Press shortcut…"
+// in the language the app shows.
+func PressShortcut() string { return In(i18n.Locale()).PressShortcut() }
+
+// PressShortcut says "Press shortcut…"
+// in the language of msgs.
+func (msgs Messages) PressShortcut() string {
+	return Catalog.Format(msgs.locale, "pressShortcut", nil)
+}
+
 // Keys says "Keys"
 // in the language the app shows.
 func Keys() string { return In(i18n.Locale()).Keys() }

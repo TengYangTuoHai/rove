@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
@@ -62,6 +63,7 @@ func Bindings() []Binding {
 		for k := range keys {
 			names = append(names, k)
 		}
+		sort.Strings(names)
 		for _, k := range names {
 			bindings = append(bindings, Binding{Section: section, Keys: k, Action: keys[k]})
 		}
@@ -168,8 +170,10 @@ func parseBinding(keys string) (ui.Modifiers, ui.Key, bool) {
 		name := keys[:cut]
 		rest := keys[cut+1:]
 		switch name {
-		case "cmd", "command", "super":
+		case "cmd", "command":
 			mods |= ui.Cmd
+		case "super":
+			mods |= ui.Super
 		case "ctrl", "control":
 			mods |= ui.Ctrl
 		case "alt", "option", "opt":
@@ -218,7 +222,13 @@ func prettyKeys(keys string) string {
 	for i, p := range parts {
 		last := i == len(parts)-1
 		switch p {
-		case "cmd", "super":
+		case "cmd", "command":
+			if mac {
+				out = append(out, "⌘")
+			} else {
+				out = append(out, "Ctrl")
+			}
+		case "super":
 			if mac {
 				out = append(out, "⌘")
 			} else {
