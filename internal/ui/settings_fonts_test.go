@@ -12,11 +12,11 @@ import (
 	"github.com/egoist/mygo/plugins/terminal"
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 func TestFontSettingsAndZoomSurviveLaunch(t *testing.T) {
-	t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+	t.Setenv("ROVE_HOME", t.TempDir())
 	first := NewApp(&herdr.Session{}, ThemeByName("graphite"))
 	first.LoadSettings()
 	first.settings.InterfaceFont, first.settings.InterfaceSize = "system-ui", 16
@@ -222,19 +222,19 @@ func TestInterfaceFontChangesRenderedText(t *testing.T) {
 	app := NewApp(&herdr.Session{}, ThemeByName("graphite"))
 	tt := myui.NewTester(app.View, 1280, 820)
 	tt.Frame()
-	before, ok := tt.Find("Herdr")
+	before, ok := tt.Find("Rove")
 	if !ok {
 		t.Fatal("brand not rendered")
 	}
 	app.settings.InterfaceFont = TerminalFont
 	tt.Frame()
-	family, ok := tt.Find("Herdr")
+	family, ok := tt.Find("Rove")
 	if !ok || family.W == before.W {
 		t.Fatalf("font family did not change text metrics: before %+v, after %+v", before, family)
 	}
 	app.settings.InterfaceSize = 18
 	tt.Frame()
-	after, ok := tt.Find("Herdr")
+	after, ok := tt.Find("Rove")
 	if !ok || after.W <= family.W || after.H <= family.H {
 		t.Fatalf("interface text did not grow: before %+v, after %+v", family, after)
 	}

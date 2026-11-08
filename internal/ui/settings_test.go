@@ -8,7 +8,7 @@ import (
 	"github.com/egoist/mygo"
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 func TestSettingsShowsBuildVersion(t *testing.T) {

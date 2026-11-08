@@ -8,7 +8,7 @@ import (
 
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // TestAgentNamesFollowTitles redraws the same rows after the sessions change

@@ -17,7 +17,7 @@ import (
 	"github.com/egoist/mygo/audio"
 	"github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 type alertState struct {
@@ -87,7 +87,7 @@ func (a *App) showAgentAlert(ag herdr.Agent) {
 		if err != nil {
 			message := a.tr(err.Error())
 			if errors.Is(err, mygo.ErrNotificationsDenied) {
-				message = a.tr("Allow Herdr notifications in system notification settings.")
+				message = a.tr("Allow Rove notifications in system notification settings.")
 			}
 			a.toast(a.tr("Cannot show system notification"), message, "error")
 		}

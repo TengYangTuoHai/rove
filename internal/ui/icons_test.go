@@ -7,7 +7,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/assets"
+	"rove/internal/assets"
 )
 
 // Every program icon must draw: a file MyGo cannot parse shows nothing at all,

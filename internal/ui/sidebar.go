@@ -6,7 +6,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // spaceColors are the avatar colors Herdr gives spaces, by ansi name.

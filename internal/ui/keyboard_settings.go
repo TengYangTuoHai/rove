@@ -12,7 +12,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/assets"
+	"rove/internal/assets"
 )
 
 type keyDocument map[string]map[string]string
@@ -222,7 +222,7 @@ func (a *App) finishKeyCapture(key string) {
 
 func (a *App) settingsKeys(c *ui.Context) {
 	a.settingsHead(c, a.tr("Keyboard shortcuts"), a.tr("Click a shortcut to change it, or add another. Press Escape to cancel."))
-	a.settingsNote(c, "terminal", a.tr("These shortcuts control Herdr. Terminal copy and paste use their own keys."))
+	a.settingsNote(c, "terminal", a.tr("These shortcuts control Rove. Terminal copy and paste use their own keys."))
 	search := ui.TextInputBase(c.Key("shortcut-search"), &a.settings.KeySearch).FillWidth().Height(32).
 		FontSize(a.fontSize(12)).TextColor(a.T.Foreground).Placeholder(a.tr("Search shortcuts…"))
 	if search.Changed() {

@@ -14,7 +14,7 @@ import (
 	"github.com/egoist/mygo/plugins/terminal"
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 type terminalSettingsConn struct {
@@ -51,7 +51,7 @@ func (c *terminalSettingsConn) waitFor(t *testing.T, text string) string {
 func TestSavedClipboardPermissionReachesNewTerminals(t *testing.T) {
 	for _, allow := range []bool{false, true} {
 		t.Run(map[bool]string{false: "denied", true: "allowed"}[allow], func(t *testing.T) {
-			t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+			t.Setenv("ROVE_HOME", t.TempDir())
 			first := NewApp(nil, ThemeByName("graphite"))
 			first.LoadSettings()
 			first.settings.Clipboard = allow
@@ -257,7 +257,7 @@ func TestMinimumContrastUpdatesPanesAndPeekInPlace(t *testing.T) {
 }
 
 func TestMinimumContrastIsAppliedAfterRelaunch(t *testing.T) {
-	t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+	t.Setenv("ROVE_HOME", t.TempDir())
 	first := NewApp(nil, ThemeByName("graphite"))
 	first.LoadSettings()
 	first.settings.MinContrast = 4.5

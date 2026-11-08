@@ -8,7 +8,7 @@ import (
 	"github.com/egoist/mygo/plugins/terminal"
 	"github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // sshHost is one Host from ~/.ssh/config that can be added as a machine.
@@ -201,7 +201,7 @@ func (a *App) machineAddOverlay(c *ui.Context) {
 			ui.Text(c, a.tr("Add a machine")).FontSize(a.fontSize(15)).FontWeight(600).TextColor(t.Foreground).Grow(1)
 			ui.Text(c, "Esc").FontSize(a.fontSize(11)).TextColor(t.Dim)
 		})
-		ui.Text(c, a.tr("A VPS, a Mac mini, a box at home: Herdr reaches it over ssh, and agents there keep running while your laptop sleeps.")).
+		ui.Text(c, a.tr("A VPS, a Mac mini, a box at home: Rove reaches it over ssh, and agents there keep running while your laptop sleeps.")).
 			FontSize(a.fontSize(12.8)).TextColor(t.Muted).Wrap().Padding(6, 0, 0, 0)
 		label := a.tr("From your ssh config")
 		if st.loaded && len(st.hosts) == 0 {

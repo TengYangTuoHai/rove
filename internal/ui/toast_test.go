@@ -8,7 +8,7 @@ import (
 
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 func toastSnapshot(app *App) []Toast {

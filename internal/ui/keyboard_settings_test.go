@@ -10,12 +10,12 @@ import (
 
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 func isolateShortcutSettings(t *testing.T) {
 	t.Helper()
-	t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+	t.Setenv("ROVE_HOME", t.TempDir())
 	oldBindings, oldOnce := bindings, bindingsOnce
 	bindings, bindingsOnce = nil, false
 	t.Cleanup(func() { bindings, bindingsOnce = oldBindings, oldOnce })

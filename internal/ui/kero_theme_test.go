@@ -9,7 +9,7 @@ import (
 	"github.com/egoist/mygo/plugins/terminal"
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 func TestKeroThemesHaveBothAppearances(t *testing.T) {
@@ -33,7 +33,7 @@ func TestKeroThemesHaveBothAppearances(t *testing.T) {
 }
 
 func TestThemeChoicesPersistAndFollowAppearance(t *testing.T) {
-	t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+	t.Setenv("ROVE_HOME", t.TempDir())
 	app := NewApp(nil, ThemeByName("graphite"))
 	app.LoadSettings()
 	app.chooseTheme("petal", false)
@@ -240,7 +240,7 @@ func TestSavedThemeKeepsMainWindowClickable(t *testing.T) {
 		{"plain", true},
 	} {
 		t.Run(choice.name, func(t *testing.T) {
-			t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+			t.Setenv("ROVE_HOME", t.TempDir())
 			first := NewApp(nil, ThemeByName("graphite"))
 			first.LoadSettings()
 			first.chooseTheme(choice.name, choice.dark)

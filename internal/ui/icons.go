@@ -7,7 +7,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/assets"
+	"rove/internal/assets"
 )
 
 var (

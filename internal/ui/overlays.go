@@ -7,7 +7,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // paletteCommand is one entry of the command palette.
@@ -18,7 +18,7 @@ type paletteCommand struct {
 	Keyword string
 }
 
-// paletteCommands are the commands the palette offers, as Herdr names them.
+// paletteCommands are the commands the palette offers, as Rove names them.
 var paletteCommands = append([]paletteCommand{
 	{"New tab", "Tab", "tab.new", "tab agent new task"},
 	{"Go to space or tab…", "Tab", "mod.open:picker", "switch jump find"},
@@ -61,7 +61,7 @@ var paletteCommands = append([]paletteCommand{
 	{"Zoom in", "App", "app.zoom_in", "bigger font size"},
 	{"Zoom out", "App", "app.zoom_out", "smaller font size"},
 	{"Reset zoom", "App", "app.zoom_reset", "font size"},
-	{"Quit Herdr", "App", "app.quit", "exit"},
+	{"Quit Rove", "App", "app.quit", "exit"},
 	{"Theme: graphite", "App", "app.theme:graphite", "colors look"},
 	{"Theme: ink", "App", "app.theme:ink", "colors look"},
 	{"Theme: moss", "App", "app.theme:moss", "colors look"},
@@ -355,7 +355,7 @@ func (a *App) welcomeOverlay(c *ui.Context) {
 		head := ui.Row(c).Height(64).FillWidth().PaddingX(24).Gap(10).AlignItems(ui.Center)
 		head.Children(func() {
 			a.logo(c, 26)
-			ui.Text(c, a.tr("Welcome to Herdr")).FontSize(a.fontSize(17)).FontWeight(600).TextColor(t.Foreground)
+			ui.Text(c, a.tr("Welcome to Rove")).FontSize(a.fontSize(17)).FontWeight(600).TextColor(t.Foreground)
 			ui.Box(c).PaddingX(6).Radius(4).Border(1, t.Border).Children(func() {
 				ui.Text(c, a.tr("BETA")).FontSize(a.fontSize(10)).FontWeight(600).TextColor(t.Dim)
 			})
@@ -373,8 +373,8 @@ func (a *App) welcomeOverlay(c *ui.Context) {
 		})
 		ui.Scroll(c).Height(height - 128).Children(func() {
 			ui.Column(c).FillWidth().Padding(24, 32, 0, 32).Gap(14).Children(func() {
-				ui.Text(c, a.tr("Herdr runs your terminals in the background")).FontSize(a.fontSize(21)).FontWeight(600).TextColor(t.Foreground)
-				ui.Text(c, a.tr("The terminals and agents you open here don't live in this window. They run in herdr-core, a small background program on your computer. Close Herdr, update it, or let it crash, and your agents keep working. Open it again and everything is where you left it, as long as the computer is on.")).
+				ui.Text(c, a.tr("Rove runs your terminals in the background")).FontSize(a.fontSize(21)).FontWeight(600).TextColor(t.Foreground)
+				ui.Text(c, a.tr("The terminals and agents you open here don't live in this window. They run in herdr-core, a small background program on your computer. Close Rove, update it, or let it crash, and your agents keep working. Open it again and everything is where you left it, as long as the computer is on.")).
 					FontSize(a.fontSize(13.5)).TextColor(t.Muted).Wrap()
 				a.welcomeFeature(c, t, "welcome-bot", a.tr("Agents tell you when they need you"),
 					a.tr("A ring while one works, “Needs you” when it asks something, a sound when it finishes."))

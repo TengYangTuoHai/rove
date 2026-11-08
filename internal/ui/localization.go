@@ -4,7 +4,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/i18n"
+	"rove/internal/i18n"
 )
 
 var languageCodes = []string{"system", "en", "zh", "ja"}

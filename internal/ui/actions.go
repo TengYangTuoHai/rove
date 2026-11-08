@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"herdr-mygo/internal/assets"
+	"rove/internal/assets"
 )
 
 // TerminalFont is the font terminals draw in, registered from the app's own

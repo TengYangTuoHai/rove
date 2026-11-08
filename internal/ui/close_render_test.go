@@ -11,7 +11,7 @@ import (
 
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // TestClosePaneRender uses trees captured by herdr's ClosePane regression
@@ -21,7 +21,7 @@ func TestClosePaneRender(t *testing.T) {
 	if dir == "" {
 		t.Skip("set PANE_CLOSE_EVIDENCE and run herdr's TestClosePane tests first")
 	}
-	t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+	t.Setenv("ROVE_HOME", t.TempDir())
 	RegisterFonts()
 	files, err := filepath.Glob(filepath.Join(dir, "*-before.json"))
 	if err != nil || len(files) == 0 {

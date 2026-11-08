@@ -8,7 +8,7 @@ import (
 
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // Native buttons sit over the content. Header actions must stay outside their
@@ -44,7 +44,7 @@ func TestHeadersLeaveRoomForNativeWindowControls(t *testing.T) {
 				}
 				labels := []string{"Files", "Changes"}
 				if open {
-					labels = append(labels, "Search", "Hide sidebar", "Herdr")
+					labels = append(labels, "Search", "Hide sidebar", "Rove")
 				} else {
 					labels = append(labels, "Show sidebar")
 				}
@@ -95,7 +95,7 @@ func TestHeadersLeaveRoomForNativeWindowControls(t *testing.T) {
 	}
 }
 
-// A desktop theme can request a taller header than Herdr's usual tab row.
+// A desktop theme can request a taller header than Rove's usual tab row.
 func TestNativeTitleBarHeightKeepsContentBelowControls(t *testing.T) {
 	for _, header := range []string{"brand", "tabs"} {
 		t.Run(header, func(t *testing.T) {

@@ -419,13 +419,13 @@ func (msgs Messages) RaiseTerminalTextContrast10LeavesProgram() string {
 	return Catalog.Format(msgs.locale, "raiseTerminalTextContrast10LeavesProgram", nil)
 }
 
-// AddConnectAndRemoveTheComputersHerdrReaches says "Add, connect and remove the computers Herdr reaches over ssh."
+// AddConnectAndRemoveTheComputersHerdrReaches says "Add, connect and remove the computers Rove reaches over ssh."
 // in the language the app shows.
 func AddConnectAndRemoveTheComputersHerdrReaches() string {
 	return In(i18n.Locale()).AddConnectAndRemoveTheComputersHerdrReaches()
 }
 
-// AddConnectAndRemoveTheComputersHerdrReaches says "Add, connect and remove the computers Herdr reaches over ssh."
+// AddConnectAndRemoveTheComputersHerdrReaches says "Add, connect and remove the computers Rove reaches over ssh."
 // in the language of msgs.
 func (msgs Messages) AddConnectAndRemoveTheComputersHerdrReaches() string {
 	return Catalog.Format(msgs.locale, "addConnectAndRemoveTheComputersHerdrReaches", nil)
@@ -793,13 +793,13 @@ func (msgs Messages) Preview() string {
 	return Catalog.Format(msgs.locale, "preview", nil)
 }
 
-// HerdrReachesOtherComputersOverSshTheirTerminals says "Herdr reaches other computers over ssh. Their terminals and agents keep running there."
+// HerdrReachesOtherComputersOverSshTheirTerminals says "Rove reaches other computers over ssh. Their terminals and agents keep running there."
 // in the language the app shows.
 func HerdrReachesOtherComputersOverSshTheirTerminals() string {
 	return In(i18n.Locale()).HerdrReachesOtherComputersOverSshTheirTerminals()
 }
 
-// HerdrReachesOtherComputersOverSshTheirTerminals says "Herdr reaches other computers over ssh. Their terminals and agents keep running there."
+// HerdrReachesOtherComputersOverSshTheirTerminals says "Rove reaches other computers over ssh. Their terminals and agents keep running there."
 // in the language of msgs.
 func (msgs Messages) HerdrReachesOtherComputersOverSshTheirTerminals() string {
 	return Catalog.Format(msgs.locale, "herdrReachesOtherComputersOverSshTheirTerminals", nil)
@@ -915,13 +915,13 @@ func (msgs Messages) FromSshConfigOrAnAddress() string {
 	return Catalog.Format(msgs.locale, "fromSshConfigOrAnAddress", nil)
 }
 
-// WhenAnAgentFinishesOrNeedsYouHerdr says "When an agent finishes or needs you, Herdr can send a system notification and play a sound."
+// WhenAnAgentFinishesOrNeedsYouHerdr says "When an agent finishes or needs you, Rove can send a system notification and play a sound."
 // in the language the app shows.
 func WhenAnAgentFinishesOrNeedsYouHerdr() string {
 	return In(i18n.Locale()).WhenAnAgentFinishesOrNeedsYouHerdr()
 }
 
-// WhenAnAgentFinishesOrNeedsYouHerdr says "When an agent finishes or needs you, Herdr can send a system notification and play a sound."
+// WhenAnAgentFinishesOrNeedsYouHerdr says "When an agent finishes or needs you, Rove can send a system notification and play a sound."
 // in the language of msgs.
 func (msgs Messages) WhenAnAgentFinishesOrNeedsYouHerdr() string {
 	return Catalog.Format(msgs.locale, "whenAnAgentFinishesOrNeedsYouHerdr", nil)
@@ -1081,13 +1081,13 @@ func (msgs Messages) CannotShowSystemNotification() string {
 	return Catalog.Format(msgs.locale, "cannotShowSystemNotification", nil)
 }
 
-// AllowHerdrNotificationsInSystemNotificationSettings says "Allow Herdr notifications in system notification settings."
+// AllowHerdrNotificationsInSystemNotificationSettings says "Allow Rove notifications in system notification settings."
 // in the language the app shows.
 func AllowHerdrNotificationsInSystemNotificationSettings() string {
 	return In(i18n.Locale()).AllowHerdrNotificationsInSystemNotificationSettings()
 }
 
-// AllowHerdrNotificationsInSystemNotificationSettings says "Allow Herdr notifications in system notification settings."
+// AllowHerdrNotificationsInSystemNotificationSettings says "Allow Rove notifications in system notification settings."
 // in the language of msgs.
 func (msgs Messages) AllowHerdrNotificationsInSystemNotificationSettings() string {
 	return Catalog.Format(msgs.locale, "allowHerdrNotificationsInSystemNotificationSettings", nil)
@@ -1557,11 +1557,11 @@ func (msgs Messages) AddAMachine() string {
 	return Catalog.Format(msgs.locale, "addAMachine", nil)
 }
 
-// AVPSAMacMiniABoxAt says "A VPS, a Mac mini, a box at home: Herdr reaches it over ssh, and agents there keep running while your laptop sleeps."
+// AVPSAMacMiniABoxAt says "A VPS, a Mac mini, a box at home: Rove reaches it over ssh, and agents there keep running while your laptop sleeps."
 // in the language the app shows.
 func AVPSAMacMiniABoxAt() string { return In(i18n.Locale()).AVPSAMacMiniABoxAt() }
 
-// AVPSAMacMiniABoxAt says "A VPS, a Mac mini, a box at home: Herdr reaches it over ssh, and agents there keep running while your laptop sleeps."
+// AVPSAMacMiniABoxAt says "A VPS, a Mac mini, a box at home: Rove reaches it over ssh, and agents there keep running while your laptop sleeps."
 // in the language of msgs.
 func (msgs Messages) AVPSAMacMiniABoxAt() string {
 	return Catalog.Format(msgs.locale, "aVPSAMacMiniABoxAt", nil)
@@ -2161,11 +2161,11 @@ func (msgs Messages) KeyboardShortcutsHelp() string {
 	return Catalog.Format(msgs.locale, "keyboardShortcutsHelp", nil)
 }
 
-// KeyboardShortcutsNote says "These shortcuts control Herdr. Terminal copy and paste use their own keys."
+// KeyboardShortcutsNote says "These shortcuts control Rove. Terminal copy and paste use their own keys."
 // in the language the app shows.
 func KeyboardShortcutsNote() string { return In(i18n.Locale()).KeyboardShortcutsNote() }
 
-// KeyboardShortcutsNote says "These shortcuts control Herdr. Terminal copy and paste use their own keys."
+// KeyboardShortcutsNote says "These shortcuts control Rove. Terminal copy and paste use their own keys."
 // in the language of msgs.
 func (msgs Messages) KeyboardShortcutsNote() string {
 	return Catalog.Format(msgs.locale, "keyboardShortcutsNote", nil)
@@ -2241,11 +2241,11 @@ func (msgs Messages) ResetZoom() string {
 	return Catalog.Format(msgs.locale, "resetZoom", nil)
 }
 
-// QuitHerdr says "Quit Herdr"
+// QuitHerdr says "Quit Rove"
 // in the language the app shows.
 func QuitHerdr() string { return In(i18n.Locale()).QuitHerdr() }
 
-// QuitHerdr says "Quit Herdr"
+// QuitHerdr says "Quit Rove"
 // in the language of msgs.
 func (msgs Messages) QuitHerdr() string {
 	return Catalog.Format(msgs.locale, "quitHerdr", nil)
@@ -2351,11 +2351,11 @@ func (msgs Messages) DismissNotification() string {
 	return Catalog.Format(msgs.locale, "dismissNotification", nil)
 }
 
-// WelcomeToHerdr says "Welcome to Herdr"
+// WelcomeToHerdr says "Welcome to Rove"
 // in the language the app shows.
 func WelcomeToHerdr() string { return In(i18n.Locale()).WelcomeToHerdr() }
 
-// WelcomeToHerdr says "Welcome to Herdr"
+// WelcomeToHerdr says "Welcome to Rove"
 // in the language of msgs.
 func (msgs Messages) WelcomeToHerdr() string {
 	return Catalog.Format(msgs.locale, "welcomeToHerdr", nil)
@@ -2381,13 +2381,13 @@ func (msgs Messages) DragToMove() string {
 	return Catalog.Format(msgs.locale, "dragToMove", nil)
 }
 
-// HerdrRunsYourTerminalsInTheBackground says "Herdr runs your terminals in the background"
+// HerdrRunsYourTerminalsInTheBackground says "Rove runs your terminals in the background"
 // in the language the app shows.
 func HerdrRunsYourTerminalsInTheBackground() string {
 	return In(i18n.Locale()).HerdrRunsYourTerminalsInTheBackground()
 }
 
-// HerdrRunsYourTerminalsInTheBackground says "Herdr runs your terminals in the background"
+// HerdrRunsYourTerminalsInTheBackground says "Rove runs your terminals in the background"
 // in the language of msgs.
 func (msgs Messages) HerdrRunsYourTerminalsInTheBackground() string {
 	return Catalog.Format(msgs.locale, "herdrRunsYourTerminalsInTheBackground", nil)

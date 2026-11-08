@@ -12,14 +12,14 @@ import (
 	"github.com/egoist/mygo/plugins/terminal"
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // The install prompt must survive redraws and receive the answer, even though
 // its terminal has no pane in the spaces document.
 func TestMachineInstallTerminalSurvivesRedrawsAndTakesInput(t *testing.T) {
 	RegisterFonts()
-	t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+	t.Setenv("ROVE_HOME", t.TempDir())
 	conn := newPeekConn()
 	term, err := terminal.New(terminal.Options{
 		Conn:  conn,
@@ -103,7 +103,7 @@ func TestMachineInstallWithCore(t *testing.T) {
 	for key, value := range map[string]string{
 		"HC_SOCKET": filepath.Join(root, "local.sock"), "HC_SESSION": "local",
 		"XDG_STATE_HOME": filepath.Join(root, "state"), "XDG_CONFIG_HOME": filepath.Join(root, "config"),
-		"HERDR_MYGO_HOME":     filepath.Join(root, "view"),
+		"ROVE_HOME":     filepath.Join(root, "view"),
 		"MACHINE_PEER_SOCKET": filepath.Join(root, "peer.sock"), "MACHINE_TEST_BIN": bin,
 	} {
 		t.Setenv(key, value)
@@ -239,7 +239,7 @@ func TestMachineInstallRealHost(t *testing.T) {
 		t.Skip("set MACHINE_REAL_TARGET only with permission to add that host")
 	}
 	RegisterFonts()
-	t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+	t.Setenv("ROVE_HOME", t.TempDir())
 	s, err := herdr.Connect(os.Getenv("MACHINE_REAL_HC"), nil)
 	if err != nil {
 		t.Fatal(err)

@@ -92,7 +92,7 @@ jobs:
       - name: Upload packages
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: herdr-${{ matrix.os }}
+          name: rove-${{ matrix.os }}
           path: |
             artifacts/*.dmg
             artifacts/*-setup-*.exe
@@ -113,7 +113,7 @@ jobs:
       - name: Download packages
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: herdr-*
+          pattern: rove-*
           path: artifacts
           merge-multiple: true
 
@@ -126,8 +126,8 @@ jobs:
           prerelease: ${{ needs.version.outputs.prerelease == 'true' }}
           fail_on_unmatched_files: true
           files: |
-            artifacts/herdr-${{ needs.version.outputs.version }}-arm64.dmg
-            artifacts/herdr-${{ needs.version.outputs.version }}-amd64.dmg
-            artifacts/herdr-setup-${{ needs.version.outputs.version }}-amd64.exe
-            artifacts/herdr_*_arm64.deb
-            artifacts/herdr_*_amd64.deb
+            artifacts/rove-${{ needs.version.outputs.version }}-arm64.dmg
+            artifacts/rove-${{ needs.version.outputs.version }}-amd64.dmg
+            artifacts/rove-setup-${{ needs.version.outputs.version }}-amd64.exe
+            artifacts/rove_*_arm64.deb
+            artifacts/rove_*_amd64.deb

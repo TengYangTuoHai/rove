@@ -6,7 +6,7 @@ import (
 	"github.com/egoist/mygo/plugins/terminal"
 	"github.com/egoist/mygo/transfer"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // maxPastedImage is the most bytes terminal.put writes in one go.

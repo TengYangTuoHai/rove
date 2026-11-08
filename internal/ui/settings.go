@@ -10,7 +10,7 @@ import (
 	"github.com/egoist/mygo/plugins/terminal"
 	"github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // settingsEntry is one searchable setting. The search and the sections both
@@ -107,7 +107,7 @@ func (a *App) settingsEntries() []settingsEntry {
 
 		entry("keys", "Keyboard shortcuts", "Change the keys for app actions.", a.tr("Manage")),
 
-		entry("machines", "Machines", "Add, connect and remove the computers Herdr reaches over ssh.", a.tr("Manage")),
+		entry("machines", "Machines", "Add, connect and remove the computers Rove reaches over ssh.", a.tr("Manage")),
 
 		entry("alerts", "Done", "A system notification, with optional sound, when an agent finishes while you are elsewhere.", a.tr(onOff(s.AlertDone))),
 		entry("alerts", "Needs you", "When an agent asks a question or waits for approval.", a.tr(onOff(s.AlertNeeds))),
@@ -364,7 +364,7 @@ func (a *App) settingsNav(c *ui.Context) {
 		navRow("look", a.tr("Look"), "sun")
 		navRow("terminal", a.tr("Terminal"), "terminal")
 		navRow("keys", a.tr("Keyboard shortcuts"), "command")
-		navGroup("Herdr")
+		navGroup("Rove")
 		navRow("machines", a.tr("Machines"), "server")
 		navRow("alerts", a.tr("Alerts"), "bell")
 
@@ -372,7 +372,7 @@ func (a *App) settingsNav(c *ui.Context) {
 		ui.Box(c).Height(1).FillWidth().Background(t.Border)
 		ui.Row(c).Height(42).FillWidth().PaddingX(8).Gap(8).AlignItems(ui.Center).Children(func() {
 			a.logo(c, 18)
-			ui.Text(c, "Herdr").FontSize(a.fontSize(11.5)).TextColor(t.Muted)
+			ui.Text(c, "Rove").FontSize(a.fontSize(11.5)).TextColor(t.Muted)
 			ui.Spacer(c)
 			version := mygo.App.Version()
 			if version == "" {
@@ -1095,7 +1095,7 @@ func (a *App) settingsTerminalPreview(c *ui.Context) {
 			a.termLine(c, "~", ` echo "agents keep running"`, t.Accent, t.TerminalForeground)
 			a.termLine(c, "", "agents keep running", t.Dim, t.TerminalForeground)
 			a.termLine(c, "~", " hc ls", t.Accent, t.TerminalForeground)
-			a.termLine(c, "", "t3  claude    working    herdr-mygo", t.Muted, t.Muted)
+			a.termLine(c, "", "t3  claude    working    rove", t.Muted, t.Muted)
 			ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() {
 				ui.Text(c, "~").Font(TerminalFont).FontSize(a.fontSize(10.5)).TextColor(t.Accent)
 				ui.Box(c).Size(6, 11).Background(t.Accent)
@@ -1115,7 +1115,7 @@ func (a *App) termLine(c *ui.Context, prompt, body string, promptColor, bodyColo
 
 // settingsMachines is the Machines section.
 func (a *App) settingsMachines(c *ui.Context) {
-	a.settingsHead(c, a.tr("Machines"), a.tr("Herdr reaches other computers over ssh. Their terminals and agents keep running there."))
+	a.settingsHead(c, a.tr("Machines"), a.tr("Rove reaches other computers over ssh. Their terminals and agents keep running there."))
 
 	var machines []*herdr.Machine
 	if a.S != nil {
@@ -1266,7 +1266,7 @@ func (a *App) settingsAddMachineRow(c *ui.Context) {
 // settingsAlerts is the Alerts section.
 func (a *App) settingsAlerts(c *ui.Context) {
 	t := a.T
-	a.settingsHead(c, a.tr("Alerts"), a.tr("When an agent finishes or needs you, Herdr can send a system notification and play a sound."))
+	a.settingsHead(c, a.tr("Alerts"), a.tr("When an agent finishes or needs you, Rove can send a system notification and play a sound."))
 
 	a.settingsCard(c, func() {
 		a.settingsRow(c, a.tr("Done"), a.tr("A system notification, with optional sound, when an agent finishes while you are elsewhere."), func() {

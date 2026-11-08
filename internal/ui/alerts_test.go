@@ -17,7 +17,7 @@ import (
 	"github.com/egoist/mygo/audio"
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 func testAlertWAV(t *testing.T) string {
@@ -50,7 +50,7 @@ func testAlertWAV(t *testing.T) string {
 }
 
 func TestAlertPreferencesSurviveLaunch(t *testing.T) {
-	t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+	t.Setenv("ROVE_HOME", t.TempDir())
 	first := NewApp(nil, ThemeByName("graphite"))
 	first.LoadSettings()
 	path := testAlertWAV(t)
@@ -312,7 +312,7 @@ func TestAgentNotificationFailureIsActionable(t *testing.T) {
 		err  error
 		body string
 	}{
-		{"denied", mygo.ErrNotificationsDenied, "Allow Herdr notifications in system notification settings."},
+		{"denied", mygo.ErrNotificationsDenied, "Allow Rove notifications in system notification settings."},
 		{"delivery failed", errors.New("notification service unavailable"), "notification service unavailable"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

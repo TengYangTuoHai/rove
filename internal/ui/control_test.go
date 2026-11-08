@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // controlHomeForTest is a short folder with a socket path inside the length

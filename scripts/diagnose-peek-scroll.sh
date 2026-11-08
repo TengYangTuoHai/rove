@@ -6,12 +6,12 @@ usage() {
   cat <<'USAGE'
 Usage: bash scripts/diagnose-peek-scroll.sh [options]
 
-Run this on the Mac where scrolling stutters, with Herdr and the affected Pi
+Run this on the Mac where scrolling stutters, with Rove and the affected Pi
 session open. After the countdown, scroll that Pi popup until capture finishes.
 The script samples native stacks; it sends no terminal input or UI events and
 changes no settings. No Go, Xcode or extra packages are required.
 
-  --app-pid PID     Herdr process (auto-detected when exactly one is running)
+  --app-pid PID     Rove process (auto-detected when exactly one is running)
   --pi-pid PID      Affected Pi process; repeat to sample several (default: all Pi)
   --duration SEC    Capture for 1–30 seconds (default: 8)
   --delay SEC       Countdown before sampling, 0–30 seconds (default: 5)
@@ -62,11 +62,11 @@ processes=$(/bin/ps -U "$(id -u)" -o pid=,comm=)
 if [[ -z "$app_pid" ]]; then
   detected_apps=()
   while read -r pid; do [[ -n "$pid" ]] && detected_apps+=("$pid"); done < <(
-    printf '%s\n' "$processes" | awk '/\/Herdr\.app\/Contents\/MacOS\/Herdr$/ || /\/herdr-mygo$/ {print $1}'
+    printf '%s\n' "$processes" | awk '/\/Rove\.app\/Contents\/MacOS\/Rove$/ || /\/rove$/ {print $1}'
   )
   if ((${#detected_apps[@]} != 1)); then
-    printf 'Found %s Herdr processes. Specify --app-pid from Activity Monitor.\n' "${#detected_apps[@]}" >&2
-    printf '%s\n' "$processes" | awk '/Herdr|herdr-mygo/' >&2
+    printf 'Found %s Rove processes. Specify --app-pid from Activity Monitor.\n' "${#detected_apps[@]}" >&2
+    printf '%s\n' "$processes" | awk '/Rove|rove/' >&2
     exit 2
   fi
   app_pid=${detected_apps[0]}
@@ -118,9 +118,9 @@ app_exe=$(/bin/ps -p "$app_pid" -o comm= | awk '{sub(/^[[:space:]]+/, ""); print
 } > "$out/environment.txt" 2>&1
 /usr/sbin/system_profiler -timeout 5 -detailLevel mini SPDisplaysDataType > "$out/displays.txt" 2>&1 || true
 if ((${#pi_pids[@]} == 0)); then
-  printf 'Pi was not auto-detected; collecting Herdr only. Use --pi-pid to include it.\n'
+  printf 'Pi was not auto-detected; collecting Rove only. Use --pi-pid to include it.\n'
 fi
-printf 'Capturing Herdr PID %s and %s Pi process(es).\n' "$app_pid" "${#pi_pids[@]}"
+printf 'Capturing Rove PID %s and %s Pi process(es).\n' "$app_pid" "${#pi_pids[@]}"
 printf 'In %s seconds, scroll the affected popup for %s seconds.\n' "$delay" "$duration"
 sleep "$delay"
 printf 'Sampling now — reproduce the stutter.\n'

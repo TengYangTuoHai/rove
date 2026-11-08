@@ -40,7 +40,7 @@ func sendDesktopNotification(ctx context.Context, platform string, opts mygo.Not
 func desktopNotificationCommand(ctx context.Context, platform string, opts mygo.NotificationOptions) (*exec.Cmd, error) {
 	switch platform {
 	case "linux":
-		args := []string{"--app-name=Herdr", "--icon=herdr", "--hint=string:desktop-entry:herdr"}
+		args := []string{"--app-name=Rove", "--icon=rove", "--hint=string:desktop-entry:rove"}
 		if opts.Silent {
 			args = append(args, "--hint=boolean:suppress-sound:true")
 		}
@@ -83,12 +83,12 @@ try {
     $null = [Windows.UI.Notifications.NotificationSetting, Windows.UI.Notifications, ContentType = WindowsRuntime]
     $null = [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime]
 
-    $appID = 'dev.herdr.mygo'
+    $appID = 'dev.rove.app'
     $key = 'HKCU:\Software\Classes\AppUserModelId\' + $appID
     if (-not (Test-Path -LiteralPath $key)) {
         $null = New-Item -Path $key -Force
     }
-    $null = New-ItemProperty -Path $key -Name 'DisplayName' -Value 'Herdr' -PropertyType String -Force
+    $null = New-ItemProperty -Path $key -Name 'DisplayName' -Value 'Rove' -PropertyType String -Force
     # A stable stub CLSID keeps unpackaged toasts in Notification Center.
     # These alerts do not provide activation actions.
     $null = New-ItemProperty -Path $key -Name 'CustomActivator' -Value '{7E53EBD8-52B3-4C66-A159-F81DC2E771B4}' -PropertyType String -Force
@@ -105,7 +105,7 @@ try {
     }
     $notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appID)
     if ($notifier.Setting -ne [Windows.UI.Notifications.NotificationSetting]::Enabled) {
-        throw 'Allow Herdr notifications in Windows Settings > System > Notifications.'
+        throw 'Allow Rove notifications in Windows Settings > System > Notifications.'
     }
     $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
     $notifier.Show($toast)

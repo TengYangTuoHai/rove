@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"herdr-mygo/internal/core"
+	"rove/internal/core"
 )
 
 // Machine is one core this window reaches over ssh (hc machine ls).

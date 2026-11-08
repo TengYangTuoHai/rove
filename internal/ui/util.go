@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"herdr-mygo/internal/gitcmd"
+	"rove/internal/gitcmd"
 )
 
 // readDir lists a folder, folders first, without dotfiles.

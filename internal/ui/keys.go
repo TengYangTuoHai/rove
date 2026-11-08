@@ -11,8 +11,8 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/assets"
-	"herdr-mygo/internal/herdr"
+	"rove/internal/assets"
+	"rove/internal/herdr"
 )
 
 // Binding is one key in keys.json: its section, its key and what it does.

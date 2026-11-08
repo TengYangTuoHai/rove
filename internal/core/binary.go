@@ -55,7 +55,7 @@ func resolveHC(executable, home, localAppData, goos string, lookPath func(string
 			return path, nil
 		}
 	}
-	return "", fmt.Errorf("herdr-core (hc) is missing. Reinstall Herdr with its bundled core, or install hc from https://github.com/herdrdev/herdr-core#install and restart Herdr")
+	return "", fmt.Errorf("herdr-core (hc) is missing. Reinstall Rove with its bundled core, or install hc from https://github.com/herdrdev/herdr-core#install and restart Rove")
 }
 
 func hcEnvironment(binary string) []string {

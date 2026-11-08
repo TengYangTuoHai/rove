@@ -10,7 +10,7 @@ import (
 
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // TestToastShot captures the real window renderer with the reported warning,

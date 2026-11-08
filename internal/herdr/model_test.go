@@ -96,7 +96,7 @@ func TestTerminalMachine(t *testing.T) {
 // gives the same sizes. The panes and tabs a window does not show are left
 // alone.
 func TestSetWeightsKeepsTheDragsSizes(t *testing.T) {
-	t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+	t.Setenv("ROVE_HOME", t.TempDir())
 	half := 0.5
 	one := 1.0
 	tab := &Tab{ID: "tb1", Root: &Node{ID: "tb1", Type: "row", Children: []*Node{

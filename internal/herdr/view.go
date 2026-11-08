@@ -10,17 +10,17 @@ import (
 // keys.json and view.json. It is not herdr-app's folder: Herdr's window has
 // settings of its own, and keeps them apart from the original app's.
 func AppHome() string {
-	if h := os.Getenv("HERDR_MYGO_HOME"); h != "" {
+	if h := os.Getenv("ROVE_HOME"); h != "" {
 		return h
 	}
 	if dir := os.Getenv("XDG_CONFIG_HOME"); dir != "" {
-		return filepath.Join(dir, "herdr-mygo")
+		return filepath.Join(dir, "rove")
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "."
 	}
-	return filepath.Join(home, ".config", "herdr-mygo")
+	return filepath.Join(home, ".config", "rove")
 }
 
 // viewFile is what this screen keeps: the shown space, each space's tab,

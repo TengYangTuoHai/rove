@@ -4,7 +4,7 @@ import (
 	"io/fs"
 	"testing"
 
-	"herdr-mygo/internal/assets"
+	"rove/internal/assets"
 )
 
 // Every row of the program table needs its icon: a missing file draws a plain

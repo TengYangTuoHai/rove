@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // ControlHome is the folder `herdr-app do` looks in for the window's socket:

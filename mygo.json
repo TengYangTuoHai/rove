@@ -1,6 +1,6 @@
 {
-  "name": "Herdr",
-  "identifier": "dev.herdr.mygo",
+  "name": "Rove",
+  "identifier": "dev.rove.app",
   "version": "0.1.0",
   "out": "build",
   "icon": "resources/icon.png",

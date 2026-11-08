@@ -9,8 +9,8 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/gitcmd"
-	"herdr-mygo/internal/herdr"
+	"rove/internal/gitcmd"
+	"rove/internal/herdr"
 )
 
 // filesPanel is the Files panel's state: the folder it shows, the folders

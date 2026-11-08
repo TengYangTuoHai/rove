@@ -10,7 +10,7 @@ import (
 
 func closeLayoutSession(t *testing.T, root *Node, focused string) *Session {
 	t.Helper()
-	t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+	t.Setenv("ROVE_HOME", t.TempDir())
 	return &Session{
 		spaces:    []*Space{{ID: "sp", Tabs: []*Tab{{ID: "tab", Root: root}}}},
 		active:    "sp",

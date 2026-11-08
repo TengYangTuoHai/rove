@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // fsEntry is one row of the Files panel: a name, and whether it is a folder.

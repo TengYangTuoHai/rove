@@ -5,7 +5,7 @@ import (
 
 	"github.com/egoist/mygo"
 
-	"herdr-mygo/internal/i18n"
+	"rove/internal/i18n"
 )
 
 // StartLocalization connects the UI to MyGo's language model on the main

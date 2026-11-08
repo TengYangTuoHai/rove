@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	myui "github.com/egoist/mygo/ui"
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 func TestLanguagePreferencePersistence(t *testing.T) {
@@ -27,7 +27,7 @@ func TestLanguagePreferencePersistence(t *testing.T) {
 	if got := readSettings([]byte(`{"theme":"ink"}`), defaultSettings()).Language; got != "system" {
 		t.Fatalf("legacy settings=%q", got)
 	}
-	t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+	t.Setenv("ROVE_HOME", t.TempDir())
 	if err := os.WriteFile(ConfigPath(), data, 0600); err != nil {
 		t.Fatal(err)
 	}

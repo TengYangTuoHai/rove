@@ -26,7 +26,7 @@ func TestLinuxNotificationTextAndSound(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		want := []string{"notify-send", "--app-name=Herdr", "--icon=herdr", "--hint=string:desktop-entry:herdr"}
+		want := []string{"notify-send", "--app-name=Rove", "--icon=rove", "--hint=string:desktop-entry:rove"}
 		if silent {
 			want = append(want, "--hint=boolean:suppress-sound:true")
 		}
@@ -124,7 +124,7 @@ func TestNativeDesktopNotifications(t *testing.T) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
 		t.Skip("native notification check requires Linux or Windows")
 	}
-	for _, title := range []string{"Done · Herdr notification check", "Needs you · Herdr notification check"} {
+	for _, title := range []string{"Done · Rove notification check", "Needs you · Rove notification check"} {
 		err := sendSystemNotification(mygo.NotificationOptions{Title: title, Body: "项目 <test> & another space", Silent: true})
 		if err != nil {
 			t.Fatal(err)

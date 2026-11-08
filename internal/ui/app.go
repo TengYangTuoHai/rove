@@ -1,4 +1,4 @@
-// Package ui draws the window: the Herdr frame rebuilt in Go on MyGo's
+// Package ui draws the window: the Rove frame rebuilt in Go on MyGo's
 // native UI, with herdr-core running the terminals behind it.
 package ui
 
@@ -14,8 +14,8 @@ import (
 	"github.com/egoist/mygo/transfer"
 	"github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
-	"herdr-mygo/internal/i18n"
+	"rove/internal/herdr"
+	"rove/internal/i18n"
 )
 
 const (
@@ -175,7 +175,7 @@ func (a *App) View(c *ui.Context) {
 	if a.S == nil {
 		ui.Box(c).Fill().Background(t.Canvas).Center().Children(func() {
 			ui.Column(c).Gap(8).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, "Herdr").FontSize(a.fontSize(18)).FontWeight(600).TextColor(t.Foreground)
+				ui.Text(c, "Rove").FontSize(a.fontSize(18)).FontWeight(600).TextColor(t.Foreground)
 				msg := a.tr("Connecting to herdr-core…")
 				if a.err != nil {
 					msg = a.err.Error()
@@ -347,7 +347,7 @@ func (a *App) brand(c *ui.Context) {
 	row.Children(func() {
 		ui.Row(c).Grow(1).Gap(8).AlignItems(ui.Center).Children(func() {
 			a.logo(c, 20)
-			ui.Text(c, "Herdr").FontSize(a.fontSize(13.5)).FontWeight(600).TextColor(t.Foreground)
+			ui.Text(c, "Rove").FontSize(a.fontSize(13.5)).FontWeight(600).TextColor(t.Foreground)
 		})
 		a.iconButton(c, "search", 26, a.tr("Search"), func() { a.OpenOverlay("picker") })
 		a.iconButton(c, "sidebar", 26, a.tr("Hide sidebar"), a.toggleSidebar)
@@ -1391,7 +1391,7 @@ func (a *App) paletteHint() string {
 	return a.tr("commands")
 }
 
-// resizeHandle drags the sidebar's edge, as Herdr's divider does. The edge
+// resizeHandle drags the sidebar's edge, as Rove's divider does. The edge
 // is where the last frame drew it, so it keeps up while the sidebar eases
 // open or closed; a drag moves the width at once, as the pointer does.
 func (a *App) resizeHandle(c *ui.Context) {

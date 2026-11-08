@@ -12,7 +12,7 @@ import (
 	myui "github.com/egoist/mygo/ui"
 	"golang.org/x/image/font/sfnt"
 
-	"herdr-mygo/internal/assets"
+	"rove/internal/assets"
 )
 
 // Prompt and TUI icons live in Unicode's private-use areas, so system

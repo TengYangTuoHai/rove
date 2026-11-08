@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"herdr-mygo/internal/core"
-	"herdr-mygo/internal/gitcmd"
+	"rove/internal/core"
+	"rove/internal/gitcmd"
 )
 
 // tabView is what each screen keeps of a tab: its focus, zoom and history.

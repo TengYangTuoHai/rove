@@ -8,7 +8,7 @@ import (
 
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // TestShot renders the window without one, for comparing against Herdr's own

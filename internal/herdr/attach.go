@@ -10,7 +10,7 @@ import (
 	"github.com/egoist/mygo/plugins/terminal"
 	"github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/core"
+	"rove/internal/core"
 )
 
 // Attach is a pane's view of one core terminal: what the program writes is

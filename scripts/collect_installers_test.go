@@ -25,13 +25,13 @@ func TestCollectInstallers(t *testing.T) {
 			files []string
 		}{
 			{"darwin", []string{
-				"darwin-arm64/herdr-" + version + "-arm64.dmg",
-				"darwin-amd64/herdr-" + version + "-amd64.dmg",
+				"darwin-arm64/rove-" + version + "-arm64.dmg",
+				"darwin-amd64/rove-" + version + "-amd64.dmg",
 			}},
-			{"windows", []string{"windows-amd64/herdr-setup-" + version + "-amd64.exe"}},
+			{"windows", []string{"windows-amd64/rove-setup-" + version + "-amd64.exe"}},
 			{"linux", []string{
-				"linux-arm64/herdr_" + versions.deb + "_arm64.deb",
-				"linux-amd64/herdr_" + versions.deb + "_amd64.deb",
+				"linux-arm64/rove_" + versions.deb + "_arm64.deb",
+				"linux-amd64/rove_" + versions.deb + "_amd64.deb",
 			}},
 		} {
 			t.Run(version+"/"+target.os, func(t *testing.T) {
@@ -51,7 +51,7 @@ func TestCollectInstallers(t *testing.T) {
 							}
 							want = append(want, filepath.Base(file))
 							// Other build products must never become release assets.
-							for _, extra := range []string{"Herdr.exe", "PKGBUILD", "install.sh", "herdr-old.dmg", "herdr.tar.gz"} {
+							for _, extra := range []string{"Rove.exe", "PKGBUILD", "install.sh", "rove-old.dmg", "herdr.tar.gz"} {
 								if err := os.WriteFile(filepath.Join(filepath.Dir(path), extra), []byte("not an installer"), 0o644); err != nil {
 									t.Fatal(err)
 								}

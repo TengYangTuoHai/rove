@@ -7,7 +7,7 @@ import (
 	"github.com/egoist/mygo/plugins/terminal"
 	"github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/assets"
+	"rove/internal/assets"
 )
 
 // RegisterFonts adds JetBrains Mono with Nerd Fonts' prompt and TUI icons

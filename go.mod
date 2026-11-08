@@ -1,4 +1,4 @@
-module herdr-mygo
+module rove
 
 go 1.27.3
 

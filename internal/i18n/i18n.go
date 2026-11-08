@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	native "github.com/egoist/mygo/i18n"
-	"herdr-mygo/internal/i18n/locales"
+	"rove/internal/i18n/locales"
 )
 
 // Resolve chooses a supported language from ordered BCP 47 or POSIX preferences.

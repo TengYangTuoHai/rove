@@ -16,8 +16,8 @@ import (
 	"github.com/egoist/mygo/plugins/terminal"
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/core"
-	"herdr-mygo/internal/herdr"
+	"rove/internal/core"
+	"rove/internal/herdr"
 )
 
 // The fixture speaks the real core protocol in a child test process. It gives
@@ -114,7 +114,7 @@ func runFullscreenCore() {
 
 func fullscreenSession(t *testing.T) *herdr.Session {
 	t.Helper()
-	t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+	t.Setenv("ROVE_HOME", t.TempDir())
 	t.Setenv("FULLSCREEN_TEST_CORE", "1")
 	exe, err := os.Executable()
 	if err != nil {

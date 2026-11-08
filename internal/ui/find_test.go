@@ -12,8 +12,8 @@ import (
 	"github.com/egoist/mygo/plugins/terminal"
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/assets"
-	"herdr-mygo/internal/herdr"
+	"rove/internal/assets"
+	"rove/internal/herdr"
 )
 
 func feedFindOutput(term *terminal.Terminal) {

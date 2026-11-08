@@ -9,7 +9,7 @@ import (
 
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 func TestCloseWarningsScope(t *testing.T) {
@@ -59,7 +59,7 @@ func TestCloseWarningsScope(t *testing.T) {
 func newCloseConfirmTest(t *testing.T, theme string, width int) (*App, *myui.Tester, *int) {
 	t.Helper()
 	RegisterFonts()
-	t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+	t.Setenv("ROVE_HOME", t.TempDir())
 	a := NewApp(&herdr.Session{}, ThemeByName(theme))
 	closed := new(int)
 	a.closing = closeState{kind: "pane", names: []string{"claude"}, run: func() { *closed++ }}

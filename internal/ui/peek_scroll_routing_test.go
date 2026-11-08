@@ -12,7 +12,7 @@ import (
 
 	"github.com/egoist/mygo/plugins/terminal"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // The same gesture can scroll locally, report a mouse wheel, or send arrow

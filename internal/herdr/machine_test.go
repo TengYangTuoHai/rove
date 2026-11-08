@@ -25,7 +25,7 @@ func TestMachinesFollowDraggedOrder(t *testing.T) {
 }
 
 func TestMoveMachine(t *testing.T) {
-	t.Setenv("HERDR_MYGO_HOME", t.TempDir())
+	t.Setenv("ROVE_HOME", t.TempDir())
 	s := &Session{machines: []*Machine{{Name: "alpha"}, {Name: "beta"}, {Name: "gamma"}}}
 	s.MoveMachine("gamma", 1)
 	if got := machineNames(s); got != "gamma,alpha,beta" {

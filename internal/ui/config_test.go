@@ -8,7 +8,7 @@ import (
 
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // TestSettingsPersistBetweenLaunches keeps the theme and the appearance in
@@ -24,7 +24,7 @@ func TestSettingsPersistBetweenLaunches(t *testing.T) {
 	first.settings.AlertSound = false
 	first.saveSettings()
 
-	path := filepath.Join(dir, "herdr-mygo", "settings.json")
+	path := filepath.Join(dir, "rove", "settings.json")
 	if _, err := os.Stat(path); err != nil {
 		t.Fatalf("no settings file: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestLoadSettingsWritesNothingUntilAChange(t *testing.T) {
 	first.settings.Theme = "moss"
 	first.saveSettings()
 
-	path := filepath.Join(dir, "herdr-mygo", "settings.json")
+	path := filepath.Join(dir, "rove", "settings.json")
 	before, err := os.Stat(path)
 	if err != nil {
 		t.Fatal(err)
@@ -132,7 +132,7 @@ func TestViewSavesAsAChangeHappens(t *testing.T) {
 	RegisterFonts()
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)
-	path := filepath.Join(dir, "herdr-mygo", "settings.json")
+	path := filepath.Join(dir, "rove", "settings.json")
 
 	app := NewApp(&herdr.Session{}, ThemeByName("graphite"))
 	app.LoadSettings()
@@ -163,7 +163,7 @@ func TestViewSavesAsAChangeHappens(t *testing.T) {
 func TestConfigPathIsTheAppsOwn(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)
-	if got, want := ConfigPath(), filepath.Join(dir, "herdr-mygo", "settings.json"); got != want {
+	if got, want := ConfigPath(), filepath.Join(dir, "rove", "settings.json"); got != want {
 		t.Fatalf("ConfigPath() = %q, want %q", got, want)
 	}
 }

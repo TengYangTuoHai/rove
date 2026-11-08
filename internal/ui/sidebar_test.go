@@ -7,7 +7,7 @@ import (
 
 	myui "github.com/egoist/mygo/ui"
 
-	"herdr-mygo/internal/herdr"
+	"rove/internal/herdr"
 )
 
 // TestToggleSidebarCollapsesToNothingAndRestoresWidth closes the sidebar to
