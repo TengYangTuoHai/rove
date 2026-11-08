@@ -1,17 +1,34 @@
-# Rove
+<div align="center">
+  <img src="resources/icon.png" alt="Rove logo" width="112">
+  <h1>Rove</h1>
+  <p><strong>A little more room for your terminals and agents.</strong></p>
+  <p>A desktop workspace for local sessions, remote machines, and the work in between.</p>
+  <p>
+    <a href="https://github.com/TengYangTuoHai/rove/releases"><strong>Download</strong></a> ·
+    <a href="#features">Features</a> ·
+    <a href="#development">Development</a> ·
+    <a href="README_CN.md">简体中文</a>
+  </p>
+  <p>
+    <a href="https://github.com/TengYangTuoHai/rove/actions/workflows/build.yml"><img src="https://github.com/TengYangTuoHai/rove/actions/workflows/build.yml/badge.svg?branch=master" alt="Build packages"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8ab8a9" alt="MIT license"></a>
+    <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-647d7b" alt="macOS, Windows and Linux">
+  </p>
+  <img src="docs/rove-workspace.svg" alt="Illustration of a Rove workspace with a sidebar and split terminal panes" width="100%">
+  <p><sub>Workspace illustration</sub></p>
+</div>
 
-English | [简体中文](README_CN.md)
-
-Rove is a desktop workspace for terminals and coding agents, built with Go and [MyGo](https://github.com/egoist/mygo). It uses [herdr-core](https://github.com/herdrdev/herdr-core) to run terminals in the background, so closing the window does not stop running sessions while the computer stays on.
+Built with Go and [MyGo](https://github.com/egoist/mygo), Rove uses [herdr-core](https://github.com/herdrdev/herdr-core) to run terminals in the background. Close the window and your sessions keep running while the computer stays on.
 
 ## Features
 
-- Organize terminals into spaces, tabs, and split panes; resize, focus, and zoom panes.
-- Connect to machines over SSH and work with their remote terminals, files, and Git changes.
-- See agent status and inspect background workers. Receive system notifications and optional sounds when an agent finishes or needs attention.
-- Search terminal output and scrollback, browse files, preview changes, and create Git commits.
-- Customize themes, fonts, appearance, and keyboard shortcuts. Open commands with a searchable palette.
-- Use the interface in English, Simplified Chinese, Traditional Chinese, or Japanese. The system language is followed by default.
+**Make space to focus.** Organize work into spaces, tabs, and split panes. Resize, focus, or zoom panes and search terminal output and scrollback.
+
+**Bring your machines together.** Connect over SSH and work with remote terminals, files, and Git changes alongside local sessions.
+
+**Keep up with your agents.** See agent status, inspect background workers, and receive system notifications and optional sounds when an agent finishes or needs attention.
+
+**Make it yours.** Customize themes, fonts, appearance, and shortcuts. Browse files, preview changes, create Git commits, and find actions in the command palette. The interface supports English, Simplified Chinese, Traditional Chinese, and Japanese.
 
 ## Install
 

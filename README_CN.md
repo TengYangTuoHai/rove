@@ -1,17 +1,34 @@
-# Rove
+<div align="center">
+  <img src="resources/icon.png" alt="Rove 标志" width="112">
+  <h1>Rove</h1>
+  <p><strong>给终端和代理，多一点空间。</strong></p>
+  <p>把本地会话、远程计算机和手头的工作，放在同一个桌面工作空间。</p>
+  <p>
+    <a href="https://github.com/TengYangTuoHai/rove/releases"><strong>下载安装</strong></a> ·
+    <a href="#功能">功能</a> ·
+    <a href="#开发">开发</a> ·
+    <a href="README.md">English</a>
+  </p>
+  <p>
+    <a href="https://github.com/TengYangTuoHai/rove/actions/workflows/build.yml"><img src="https://github.com/TengYangTuoHai/rove/actions/workflows/build.yml/badge.svg?branch=master" alt="构建状态"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8ab8a9" alt="MIT 许可证"></a>
+    <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-647d7b" alt="支持 macOS、Windows 和 Linux">
+  </p>
+  <img src="docs/rove-workspace.svg" alt="Rove 工作空间示意图，展示侧边栏和分屏终端" width="100%">
+  <p><sub>工作空间示意图</sub></p>
+</div>
 
-[English](README.md) | 简体中文
-
-Rove 是一个面向终端和编程代理的桌面工作空间，使用 Go 和 [MyGo](https://github.com/egoist/mygo) 构建。它通过 [herdr-core](https://github.com/herdrdev/herdr-core) 在后台运行终端，因此只要计算机保持运行，关闭窗口不会中断会话。
+Rove 使用 Go 和 [MyGo](https://github.com/egoist/mygo) 构建，通过 [herdr-core](https://github.com/herdrdev/herdr-core) 在后台运行终端。只要计算机保持运行，关闭窗口也不会中断会话。
 
 ## 功能
 
-- 使用空间、标签页和分屏组织终端，支持调整面板大小、切换焦点和缩放面板。
-- 通过 SSH 连接计算机，使用远程终端、文件和 Git 更改。
-- 查看代理状态和后台任务；代理完成任务或需要处理时，可通过系统通知和提示音提醒。
-- 搜索终端输出和历史记录，浏览文件、预览更改并创建 Git 提交。
-- 自定义主题、字体、外观和快捷键，通过可搜索的命令面板执行操作。
-- 界面支持英语、简体中文、繁体中文和日语，默认跟随系统语言。
+**专注手头的工作。** 使用空间、标签页和分屏组织终端，调整面板大小、切换焦点或缩放面板，也可以搜索终端输出和历史记录。
+
+**连接你的计算机。** 通过 SSH 连接远程机器，在同一个工作空间使用本地和远程终端、文件及 Git 更改。
+
+**随时了解代理进度。** 查看代理状态和后台任务；代理完成任务或需要处理时，可通过系统通知和提示音提醒。
+
+**按自己的习惯使用。** 自定义主题、字体、外观和快捷键；浏览文件、预览更改、创建 Git 提交，或通过命令面板快速查找操作。界面支持英语、简体中文、繁体中文和日语。
 
 ## 安装
 
