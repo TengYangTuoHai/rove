@@ -204,6 +204,7 @@ func (a *App) View(c *ui.Context) {
 		}
 	}
 	a.collect()
+	a.openAgentAlerts()
 	a.agentAlerts()
 	// The edge is read before the sidebar is built, so that a drag follows
 	// the pointer in the frame it moves.

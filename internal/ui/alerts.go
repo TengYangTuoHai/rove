@@ -27,6 +27,8 @@ type alertState struct {
 	play   func(string) error
 	pick   func() ([]string, error)
 	notify func(mygo.NotificationOptions) error
+	// pending is written by notification callbacks and consumed on the UI thread.
+	pending []herdr.Agent
 }
 
 func validAlertSound(name string) bool {
@@ -78,7 +80,9 @@ func (a *App) showAgentAlert(ag herdr.Agent) {
 	}
 	notify := a.alerts.notify
 	if notify == nil {
-		notify = sendSystemNotification
+		notify = func(opts mygo.NotificationOptions) error {
+			return sendSystemAgentNotification(opts, func() { a.activateAgentAlert(ag) })
+		}
 	}
 	// Authorization can wait for the user. Keep it off the UI thread and
 	// leave sound playback governed by the existing app preferences.
@@ -95,6 +99,40 @@ func (a *App) showAgentAlert(ag herdr.Agent) {
 	if a.settings.AlertSound && !a.settings.MutedAgents[alertAgentKey(ag.Program)] {
 		a.previewAlertSound(sound)
 	}
+}
+
+// activateAgentAlert queues navigation for the UI thread and presents the window.
+func (a *App) activateAgentAlert(ag herdr.Agent) {
+	a.mu.Lock()
+	a.alerts.pending = append(a.alerts.pending, ag)
+	a.mu.Unlock()
+	if a.Win != nil {
+		a.Win.Show()
+	}
+	a.Repaint()
+}
+
+func (a *App) openAgentAlerts() {
+	a.mu.Lock()
+	pending := a.alerts.pending
+	a.alerts.pending = nil
+	a.mu.Unlock()
+	for _, ag := range pending {
+		if ag.Address != "" && a.S.FocusTerminal(ag.Address) {
+			a.CloseOverlay()
+		} else if ag.Space != "" && a.spaceByID(ag.Space) != nil {
+			a.S.SelectSpace(0, ag.Space)
+			a.CloseOverlay()
+		}
+	}
+}
+
+func sendSystemAgentNotification(opts mygo.NotificationOptions, onClick func()) error {
+	if runtime.GOOS == "linux" {
+		// notify-send waits until the notification is clicked or dismissed.
+		return sendDesktopNotificationAction(context.Background(), "linux", opts, onClick)
+	}
+	return sendSystemNotification(opts)
 }
 
 func sendSystemNotification(opts mygo.NotificationOptions) error {

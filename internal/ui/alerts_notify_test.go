@@ -37,6 +37,35 @@ func TestLinuxNotificationTextAndSound(t *testing.T) {
 	}
 }
 
+func TestLinuxNotificationActions(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("fake notify-send uses a POSIX shell")
+	}
+	dir := t.TempDir()
+	t.Setenv("PATH", dir)
+	fake := filepath.Join(dir, "notify-send")
+	for _, tc := range []struct {
+		name, result string
+		wantClick    bool
+	}{
+		{"clicked", "default", true},
+		{"dismissed", "", false},
+		{"unknown action", "other", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			script := "#!/bin/sh\ncase \" $* \" in *' --action=default=Open '*) ;; *) exit 2 ;; esac\nprintf '%s\\n' '" + tc.result + "'\n"
+			if err := os.WriteFile(fake, []byte(script), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			clicked := false
+			err := sendDesktopNotificationAction(context.Background(), "linux", mygo.NotificationOptions{}, func() { clicked = true })
+			if err != nil || clicked != tc.wantClick {
+				t.Fatalf("error = %v, clicked = %v", err, clicked)
+			}
+		})
+	}
+}
+
 func TestWindowsNotificationTextIsData(t *testing.T) {
 	for _, silent := range []bool{false, true} {
 		opts := mygo.NotificationOptions{Title: "Needs you · 项目 🚀", Body: "'\"</text>\n$(exit 42) ` & <project>", Silent: silent}

@@ -306,6 +306,36 @@ func TestAgentNotificationDoesNotBlockSettings(t *testing.T) {
 	}
 }
 
+func TestAgentNotificationClickNavigates(t *testing.T) {
+	s := fullscreenSession(t)
+	app := NewApp(s, ThemeByName("graphite"))
+	s.SelectTab("full")
+	app.overlay = "settings"
+	app.activateAgentAlert(herdr.Agent{Address: "tleft", Space: "space"})
+	if _, tab := s.Active(); tab == nil || tab.ID != "full" {
+		t.Fatal("notification callback changed navigation outside the UI thread")
+	}
+	app.openAgentAlerts()
+	if _, tab := s.Active(); tab == nil || tab.ID != "split" {
+		t.Fatalf("notification did not open the agent tab: %+v", tab)
+	}
+	if pane := s.FocusedPane(); pane.Terminal != "tleft" || app.overlay != "" {
+		t.Fatalf("notification did not reveal the agent: pane = %+v, overlay = %q", pane, app.overlay)
+	}
+	app.overlay = "settings"
+	app.activateAgentAlert(herdr.Agent{Address: "removed", Space: "space"})
+	app.openAgentAlerts()
+	if app.overlay != "" || s.ActiveSpaceID() != "space" {
+		t.Fatal("removed terminal did not fall back to its space")
+	}
+	app.overlay = "settings"
+	app.activateAgentAlert(herdr.Agent{Address: "removed", Space: "removed"})
+	app.openAgentAlerts()
+	if app.overlay != "settings" || s.ActiveSpaceID() != "space" {
+		t.Fatal("stale notification changed the current view")
+	}
+}
+
 func TestAgentNotificationFailureIsActionable(t *testing.T) {
 	for _, tc := range []struct {
 		name string

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/binary"
@@ -17,11 +18,17 @@ import (
 // sendDesktopNotification uses the notification service of the local desktop.
 // The caller runs it off the UI thread and supplies a delivery deadline.
 func sendDesktopNotification(ctx context.Context, platform string, opts mygo.NotificationOptions) error {
-	cmd, err := desktopNotificationCommand(ctx, platform, opts)
+	return sendDesktopNotificationAction(ctx, platform, opts, nil)
+}
+
+func sendDesktopNotificationAction(ctx context.Context, platform string, opts mygo.NotificationOptions, onClick func()) error {
+	cmd, err := desktopNotificationCommandAction(ctx, platform, opts, onClick != nil)
 	if err != nil {
 		return err
 	}
-	output, err := cmd.CombinedOutput()
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	err = cmd.Run()
 	if ctx.Err() != nil {
 		return fmt.Errorf("system notification: %w", ctx.Err())
 	}
@@ -29,20 +36,30 @@ func sendDesktopNotification(ctx context.Context, platform string, opts mygo.Not
 		if platform == "linux" && cmd.Err != nil {
 			return fmt.Errorf("install notify-send (libnotify-bin on Debian/Ubuntu or libnotify on Fedora/Arch) to show system notifications: %w", err)
 		}
-		if message := strings.TrimSpace(string(output)); message != "" {
+		if message := strings.TrimSpace(stderr.String()); message != "" {
 			return fmt.Errorf("system notification: %s: %w", message, err)
 		}
 		return fmt.Errorf("system notification: %w", err)
+	}
+	if platform == "linux" && onClick != nil && strings.TrimSpace(stdout.String()) == "default" {
+		onClick()
 	}
 	return nil
 }
 
 func desktopNotificationCommand(ctx context.Context, platform string, opts mygo.NotificationOptions) (*exec.Cmd, error) {
+	return desktopNotificationCommandAction(ctx, platform, opts, false)
+}
+
+func desktopNotificationCommandAction(ctx context.Context, platform string, opts mygo.NotificationOptions, clickable bool) (*exec.Cmd, error) {
 	switch platform {
 	case "linux":
 		args := []string{"--app-name=Rove", "--icon=rove", "--hint=string:desktop-entry:rove"}
 		if opts.Silent {
 			args = append(args, "--hint=boolean:suppress-sound:true")
+		}
+		if clickable {
+			args = append(args, "--action=default=Open")
 		}
 		// Only the body supports markup in the freedesktop notification spec.
 		// Separate options from agent-supplied text, including leading dashes.
