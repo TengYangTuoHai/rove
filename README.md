@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="resources/icon.png" alt="Rove logo" width="112">
+  <img src="internal/assets/files/img/rove.png" alt="Rove logo" width="112">
   <h1>Rove</h1>
   <p><strong>A little more room for your terminals and agents.</strong></p>
   <p>A desktop workspace for local sessions, remote machines, and the work in between.</p>

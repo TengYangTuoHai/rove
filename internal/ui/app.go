@@ -356,7 +356,7 @@ func (a *App) brand(c *ui.Context) {
 
 func (a *App) logo(c *ui.Context, size float32) {
 	if a.logoBitmap == nil {
-		data, err := iconPNG("img/herdr.png")
+		data, err := iconPNG("img/rove.png")
 		if err != nil {
 			return
 		}

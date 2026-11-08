@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="resources/icon.png" alt="Rove 标志" width="112">
+  <img src="internal/assets/files/img/rove.png" alt="Rove 标志" width="112">
   <h1>Rove</h1>
   <p><strong>给终端和代理，多一点空间。</strong></p>
   <p>把本地会话、远程计算机和手头的工作，放在同一个桌面工作空间。</p>
