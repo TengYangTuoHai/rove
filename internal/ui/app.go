@@ -32,8 +32,8 @@ const (
 	paneMinHeight float32 = 60
 	// sidebarDuration is how long the sidebar takes to open or close.
 	sidebarDuration = 200 * time.Millisecond
-	// Keep recently visited tabs ready without retaining every visited terminal.
-	maxHiddenTerminals = 12
+	// Keep a few recently visited tabs ready while bounding scrollback memory.
+	maxHiddenTerminals = 4
 )
 
 // App is the window's state: the core's world, what the window shows of it,
@@ -80,8 +80,9 @@ type App struct {
 	// settingsPath is the file the settings are kept in, empty when the
 	// window was made without one (a test, a preview), and savedSettings
 	// the text written last.
-	settingsPath  string
-	savedSettings string
+	settingsPath      string
+	savedSettings     string
+	savedSettingsFile *settingsFile
 
 	mu            sync.Mutex
 	terms         map[string]*paneTerm
@@ -92,6 +93,7 @@ type App struct {
 	terminalStyle terminal.Font       // guarded by mu; attachment goroutines use the latest choice
 	terminalPrefs terminalPreferences // guarded by mu
 	fontFamilies  []ui.FontFamily
+	logoBitmap    *ui.Bitmap // reused on the UI thread across frames
 
 	focusTerm *terminal.Terminal
 	overlay   string
@@ -353,16 +355,19 @@ func (a *App) brand(c *ui.Context) {
 }
 
 func (a *App) logo(c *ui.Context, size float32) {
-	data, err := iconPNG("img/herdr.png")
-	if err != nil {
-		return
-	}
-	bm, err := ui.DecodeBitmap(data)
-	if err != nil {
-		return
+	if a.logoBitmap == nil {
+		data, err := iconPNG("img/herdr.png")
+		if err != nil {
+			return
+		}
+		bm, err := ui.DecodeBitmap(data)
+		if err != nil {
+			return
+		}
+		a.logoBitmap = bm
 	}
 	ui.Box(c).Size(size, size).Radius(5).Clip().Children(func() {
-		ui.Image(c, bm).Size(size, size).Fit(ui.Contain)
+		ui.Image(c, a.logoBitmap).Size(size, size).Fit(ui.Contain)
 	})
 }
 
@@ -1159,21 +1164,7 @@ func (a *App) terminalFailed(key, title string, err error) {
 // collect keeps recent open panes attached across tab switches, releasing
 // removed or replaced panes and the oldest views beyond the hidden cache limit.
 func (a *App) collect() {
-	_, tab := a.S.Active()
-	visible := map[string]bool{}
-	if tab != nil {
-		for _, p := range a.S.Panes(tab.ID) {
-			visible[p.Pane+"|"+p.Terminal] = true
-		}
-	}
-	live := map[string]bool{}
-	for _, sp := range a.S.Places() {
-		for _, tab := range sp.Tabs {
-			for _, p := range a.S.Panes(tab.ID) {
-				live[p.Pane+"|"+p.Terminal] = true
-			}
-		}
-	}
+	visible, live := a.S.PaneKeys()
 	if a.overlay == "machine-add" {
 		if st := a.addMachineSnapshot(); st.term != "" {
 			key := "machine-add|" + st.term

@@ -2,8 +2,10 @@ package ui
 
 import (
 	"encoding/json"
+	"maps"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 )
 
@@ -217,6 +219,7 @@ func (a *App) LoadSettings() {
 		// with no file, writes the defaults.
 		if canonical, err := settingsJSON(a.settings); err == nil {
 			a.savedSettings = string(canonical)
+			a.rememberSettings(a.settings.file())
 		}
 	}
 	a.setLanguage(a.settings.Language)
@@ -241,12 +244,28 @@ func (a *App) saveSettings() {
 	if a.settingsPath == "" {
 		return
 	}
-	data, err := settingsJSON(a.settings)
-	if err != nil || string(data) == a.savedSettings {
+	current := a.settings.file()
+	if a.savedSettingsFile != nil && reflect.DeepEqual(&current, a.savedSettingsFile) {
 		return
 	}
-	a.savedSettings = string(data)
-	_ = writeFileAtomic(a.settingsPath, data)
+	data, err := settingsJSON(a.settings)
+	if err != nil {
+		return
+	}
+	if string(data) != a.savedSettings {
+		if err := writeFileAtomic(a.settingsPath, data); err != nil {
+			return
+		}
+		a.savedSettings = string(data)
+	}
+	a.rememberSettings(current)
+}
+
+// rememberSettings copies maps because settings controls mutate them in place.
+func (a *App) rememberSettings(current settingsFile) {
+	current.MutedAgents = maps.Clone(current.MutedAgents)
+	current.FoldedMachines = maps.Clone(current.FoldedMachines)
+	a.savedSettingsFile = &current
 }
 
 // settingsJSON is the file's text for the settings.

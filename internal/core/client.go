@@ -276,23 +276,25 @@ func (c *Client) Binary() string { return c.cmd.Path }
 // Done closes when the connection to the core is gone.
 func (c *Client) Done() <-chan struct{} { return c.done }
 
+func encodeCall(id uint64, method string, params any) ([]byte, error) {
+	return json.Marshal(struct {
+		JSONRPC string `json:"jsonrpc"`
+		ID      uint64 `json:"id"`
+		Method  string `json:"method"`
+		Params  any    `json:"params"`
+	}{JSONRPC: "2.0", ID: id, Method: method, Params: params})
+}
+
 // Call runs one JSON-RPC method and waits for its result.
 func (c *Client) Call(ctx context.Context, method string, params any) (json.RawMessage, error) {
 	if params == nil {
 		params = struct{}{}
 	}
-	body, err := json.Marshal(map[string]any{"jsonrpc": "2.0", "id": 0, "method": method, "params": params})
+	id := c.nextID.Add(1)
+	body, err := encodeCall(id, method, params)
 	if err != nil {
 		return nil, err
 	}
-	id := c.nextID.Add(1)
-	var msg map[string]json.RawMessage
-	if err := json.Unmarshal(body, &msg); err != nil {
-		return nil, err
-	}
-	idJSON, _ := json.Marshal(id)
-	msg["id"] = idJSON
-	body, _ = json.Marshal(msg)
 
 	ch := make(chan reply, 1)
 	c.mu.Lock()

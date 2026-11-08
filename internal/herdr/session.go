@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -245,6 +247,7 @@ func (s *Session) replaceMachine(machine string, spaces []*Space) {
 	was := s.active
 	var at = -1
 	var keep []*Space
+	var previousTabs []string
 	for _, sp := range s.spaces {
 		mine := sameMachine(sp.Machine, machineTag(machine))
 		if mine && at < 0 {
@@ -252,9 +255,7 @@ func (s *Session) replaceMachine(machine string, spaces []*Space) {
 		}
 		if mine {
 			for _, t := range sp.Tabs {
-				if _, ok := s.tabs[t.ID]; !ok {
-					delete(s.tabs, t.ID)
-				}
+				previousTabs = append(previousTabs, t.ID)
 			}
 			continue
 		}
@@ -266,6 +267,19 @@ func (s *Session) replaceMachine(machine string, spaces []*Space) {
 	out := append([]*Space{}, keep[:at]...)
 	out = append(out, spaces...)
 	out = append(out, keep[at:]...)
+	if len(previousTabs) > 0 {
+		remaining := make(map[string]bool)
+		for _, sp := range out {
+			for _, tab := range sp.Tabs {
+				remaining[tab.ID] = true
+			}
+		}
+		for _, id := range previousTabs {
+			if !remaining[id] {
+				delete(s.tabs, id)
+			}
+		}
+	}
 	s.spaces = out
 	if was != "" {
 		s.active = ""
@@ -299,21 +313,68 @@ func machineTag(name string) *string {
 }
 
 // applySnapshot takes the terminals an events.subscribe reply carries.
-func (s *Session) applySnapshot(raw json.RawMessage) {
+func (s *Session) applySnapshot(raw json.RawMessage) bool {
 	var res struct {
 		Terminals []*Terminal `json:"terminals"`
 	}
 	if err := json.Unmarshal(raw, &res); err != nil {
-		return
+		return false
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	same := len(res.Terminals) == len(s.order) && len(res.Terminals) == len(s.terminals)
+	if same {
+		for i, t := range res.Terminals {
+			if t == nil || s.order[i] != t.Address || !sameTerminal(s.terminals[t.Address], t) {
+				same = false
+				break
+			}
+		}
+	}
+	if same {
+		return false
+	}
 	s.terminals = map[string]*Terminal{}
 	s.order = nil
 	for _, t := range res.Terminals {
-		s.terminals[t.Address] = t
-		s.order = append(s.order, t.Address)
+		if t != nil {
+			s.terminals[t.Address] = t
+			s.order = append(s.order, t.Address)
+		}
 	}
+	return true
+}
+
+// sameTerminal compares all snapshot fields, including optional nested values.
+func sameTerminal(a, b *Terminal) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	if a.Address != b.Address || !slices.Equal(a.Argv, b.Argv) || a.Cols != b.Cols || a.Rows != b.Rows ||
+		a.Cwd != b.Cwd || !equalPtr(a.Name, b.Name) || a.Title != b.Title || a.State != b.State ||
+		!sameStatus(a.Status, b.Status) || !equalPtr(a.StatusMs, b.StatusMs) || a.Turn != b.Turn ||
+		a.Keep != b.Keep || !maps.Equal(a.Labels, b.Labels) || !equalPtr(a.Parent, b.Parent) ||
+		!equalPtr(a.Reason, b.Reason) || !equalPtr(a.ExitCode, b.ExitCode) || !equalPtr(a.Pid, b.Pid) ||
+		a.Reported != b.Reported || !equalPtr(a.Template, b.Template) || a.Where != b.Where {
+		return false
+	}
+	if a.Foreground == nil || b.Foreground == nil {
+		return a.Foreground == nil && b.Foreground == nil
+	}
+	return a.Foreground.Pid == b.Foreground.Pid && a.Foreground.Name == b.Foreground.Name &&
+		a.Foreground.Cwd == b.Foreground.Cwd && slices.Equal(a.Foreground.Argv, b.Foreground.Argv)
+}
+
+func sameStatus(a, b *Status) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.State == b.State && a.App == b.App && a.Kind == b.Kind && a.Msg == b.Msg &&
+		a.Title == b.Title && equalPtr(a.Progress, b.Progress)
+}
+
+func equalPtr[T comparable](a, b *T) bool {
+	return a == nil && b == nil || a != nil && b != nil && *a == *b
 }
 
 func (s *Session) refreshTerminals() {
@@ -326,8 +387,13 @@ func (s *Session) refreshTerminals() {
 	if err != nil {
 		return
 	}
-	s.applySnapshot(raw)
-	s.changed()
+	if s.applySnapshot(raw) {
+		s.changed()
+	} else {
+		// Git still needs periodic refresh even when no terminal changed.
+		s.refreshGit()
+	}
+	s.pruneGit()
 }
 
 // follow reads the event stream until the core goes.
@@ -577,6 +643,16 @@ func (s *Session) reindex() {
 		s.active = s.spaces[0].ID
 	}
 	s.ensureFocusLocked()
+	s.refreshGitLocked()
+}
+
+func (s *Session) refreshGit() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.refreshGitLocked()
+}
+
+func (s *Session) refreshGitLocked() {
 	for _, sp := range s.spaces {
 		for _, t := range sp.Tabs {
 			for _, b := range t.Root.blocks() {
@@ -703,9 +779,8 @@ func (s *Session) MachineHome(name string) string {
 	return s.homes[name]
 }
 
-// wantGitLocked looks up a place's repo and branch, in the background.
-func (s *Session) wantGitLocked(term *Terminal, sp *Space) {
-	on := machineOf(sp)
+// gitDir finds the folder whose state a pane contributes to its space.
+func gitDir(term *Terminal, sp *Space) string {
 	dir := sp.Folder
 	if term != nil {
 		if term.Foreground != nil && term.Foreground.Cwd != "" {
@@ -714,6 +789,48 @@ func (s *Session) wantGitLocked(term *Terminal, sp *Space) {
 			dir = term.Cwd
 		}
 	}
+	return dir
+}
+
+// pruneGit drops cached folders that no current pane can use. In-flight reads
+// may finish later and will be cleaned up on the next poll.
+func (s *Session) pruneGit() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.git) == 0 {
+		return
+	}
+	wanted := make(map[string]bool)
+	for _, sp := range s.spaces {
+		for _, tab := range sp.Tabs {
+			for _, pane := range tab.Root.blocks() {
+				if addr := pane.terminal(); addr != "" {
+					if dir := gitDir(s.terminals[addr], sp); dir != "" {
+						wanted[gitKey(machineOf(sp), dir)] = true
+					}
+				}
+			}
+		}
+	}
+	// Rebuild the map after removals so its backing storage can be freed too.
+	for key := range s.git {
+		if !wanted[key] {
+			kept := make(map[string]gitInfo)
+			for current, info := range s.git {
+				if wanted[current] {
+					kept[current] = info
+				}
+			}
+			s.git = kept
+			break
+		}
+	}
+}
+
+// wantGitLocked looks up a place's repo and branch, in the background.
+func (s *Session) wantGitLocked(term *Terminal, sp *Space) {
+	on := machineOf(sp)
+	dir := gitDir(term, sp)
 	if dir == "" {
 		return
 	}
@@ -732,22 +849,36 @@ func (s *Session) wantGitLocked(term *Terminal, sp *Space) {
 // through the machine's core when the folder is on another computer.
 func (s *Session) readGit(on, dir string) {
 	info := gitInfo{Checked: time.Now()}
-	branch, err := s.gitOut(on, dir, "rev-parse", "--abbrev-ref", "HEAD")
+	// Ask for the branch and worktree root together in the usual case.
+	rev, err := s.gitOut(on, dir, "rev-parse", "--abbrev-ref", "HEAD", "--show-toplevel")
 	if err == nil {
-		info.Branch = strings.TrimSpace(branch)
-		if top, err := s.gitOut(on, dir, "rev-parse", "--show-toplevel"); err == nil {
-			info.Repo = filepath.Base(strings.TrimSpace(top))
+		parts := strings.SplitN(strings.TrimSpace(rev), "\n", 2)
+		info.Branch = strings.TrimSpace(parts[0])
+		if len(parts) == 2 {
+			info.Repo = filepath.Base(strings.TrimSpace(parts[1]))
 		}
+	} else if strings.TrimSpace(rev) != "" {
+		// A bare repository can have a branch but no worktree root.
+		branch, branchErr := s.gitOut(on, dir, "rev-parse", "--abbrev-ref", "HEAD")
+		if branchErr == nil {
+			info.Branch = strings.TrimSpace(branch)
+		}
+	}
+	if info.Branch != "" {
 		if counts, err := s.gitOut(on, dir, "rev-list", "--left-right", "--count", "@{upstream}...HEAD"); err == nil {
 			_, _ = fmt.Sscanf(strings.TrimSpace(counts), "%d %d", &info.Behind, &info.Ahead)
 		}
 	}
 	key := gitKey(on, dir)
 	s.mu.Lock()
+	previous, existed := s.git[key]
 	s.git[key] = info
 	delete(s.gitBusy, key)
 	s.mu.Unlock()
-	s.changed()
+	previous.Checked = info.Checked
+	if !existed || previous != info {
+		s.changed()
+	}
 }
 
 // gitOut runs one git command for a folder, on the machine that holds it.
@@ -893,6 +1024,44 @@ func (s *Session) Agents() []*Agent {
 		return out[i].Seq > out[j].Seq
 	})
 	return out
+}
+
+// PaneKeys returns the shown and existing pane-terminal pairs for managing
+// terminal views. It takes one consistent snapshot without building PaneInfo.
+func (s *Session) PaneKeys() (visible, live map[string]bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	visible, live = map[string]bool{}, map[string]bool{}
+	_, shown := s.activeLocked()
+	var visit func(*Node, bool)
+	visit = func(n *Node, isVisible bool) {
+		if n == nil {
+			return
+		}
+		if n.Type == "block" {
+			addr := n.terminal()
+			if override := s.query[n.ID]; override != "" {
+				addr = override
+			}
+			key := n.ID + "|" + addr
+			live[key] = true
+			if isVisible {
+				visible[key] = true
+			}
+			return
+		}
+		for _, child := range n.Children {
+			visit(child, isVisible)
+		}
+	}
+	for _, sp := range s.spaces {
+		for _, tab := range sp.Tabs {
+			if s.tabs[tab.ID] != nil {
+				visit(tab.Root, shown != nil && tab.ID == shown.ID)
+			}
+		}
+	}
+	return visible, live
 }
 
 // Panes returns the panes of a tab.
