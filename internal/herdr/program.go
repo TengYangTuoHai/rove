@@ -34,7 +34,7 @@ var interpreterNames = []string{"node", "bun", "bunx", "deno", "python", "python
 var programTable = map[string]programEntry{
 	"claude":       {"Claude Code", "claude", []string{"claude-code"}, true},
 	"codex":        {"Codex", "codex", nil, true},
-	"pi":           {"Pi", "pi", nil, false},
+	"pi":           {"Pi", "pi", nil, true},
 	"pig":          {"PiG", "pig", nil, true},
 	"opencode":     {"OpenCode", "opencode", nil, false},
 	"cursor":       {"Cursor", "cursor", []string{"cursor-agent"}, false},
