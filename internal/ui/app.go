@@ -417,7 +417,11 @@ func (a *App) spinner(c *ui.Context, size float32, color ui.Color) {
 // programIcon draws what a terminal runs, as the app's program table says:
 // a full-color logo in its own colors, or a one-color glyph in color.
 func (a *App) programIcon(c *ui.Context, p herdr.ProgramInfo, size float32, color ui.Color) {
-	svg := iconSVG("program:" + p.Icon)
+	icon := "program:" + p.Icon
+	if p.Icon == "codex" && a.T != nil && a.T.Dark {
+		icon = "program:codex-white"
+	}
+	svg := iconSVG(icon)
 	if svg == nil {
 		a.icon(c, "terminal", size, color)
 		return
