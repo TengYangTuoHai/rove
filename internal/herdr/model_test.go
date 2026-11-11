@@ -115,8 +115,16 @@ func TestSetWeightsKeepsTheDragsSizes(t *testing.T) {
 		terminals: map[string]*Terminal{},
 	}
 
+	redraws := 0
+	s.OnChange = func() { redraws++ }
 	if !s.SetWeights(tab.ID, map[string]float64{"p1": 0.7, "p2": 0.3}) {
 		t.Fatal("SetWeights found no tab")
+	}
+	if redraws != 1 {
+		t.Fatalf("weight update requested %d redraws, want 1", redraws)
+	}
+	if !s.savedAt.IsZero() || s.alertsReady {
+		t.Fatal("layout-only update saved the view or reindexed agent alerts")
 	}
 	got := s.Tree(tab.ID)
 	for _, c := range []struct {

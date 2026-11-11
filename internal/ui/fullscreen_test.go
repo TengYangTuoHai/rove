@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image/png"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -58,6 +59,9 @@ func runFullscreenCore() {
 	}
 	tabs = append(tabs, map[string]any{"id": "broken", "root": leaf("broken")})
 	space["tabs"] = tabs
+	if axis := os.Getenv("PANE_DRAG_TEST_AXIS"); axis != "" {
+		tabs[0].(map[string]any)["root"].(*herdr.Node).Type = axis
+	}
 	channel := uint32(10)
 	endedTestStream := false
 	docVersion := 1
@@ -93,7 +97,19 @@ func runFullscreenCore() {
 		case "doc.get":
 			result = map[string]any{"version": docVersion, "value": doc}
 		case "doc.set":
-			if os.Getenv("PANE_FINISHED_TEST") == "1" {
+			if os.Getenv("PANE_DRAG_TEST_ECHO") == "before-ack" {
+				send(1, []byte("{\"method\":\"event\",\"params\":{\"type\":\"doc\"}}\n"))
+			}
+			if gate := os.Getenv("PANE_DRAG_TEST_GATE"); gate != "" {
+				conn, err := net.Dial("tcp", gate)
+				if err != nil {
+					os.Exit(1)
+				}
+				_, _ = conn.Write(append(req.Params.Value, '\n'))
+				_, _ = bufio.NewReader(conn).ReadByte()
+				_ = conn.Close()
+			}
+			if os.Getenv("PANE_FINISHED_TEST") == "1" || os.Getenv("PANE_DRAG_TEST_GATE") != "" {
 				_ = json.Unmarshal(req.Params.Value, &doc)
 				docVersion++
 				result = map[string]any{"version": docVersion}
@@ -121,6 +137,9 @@ func runFullscreenCore() {
 		}
 		reply, _ := json.Marshal(map[string]any{"jsonrpc": "2.0", "id": req.ID, "result": result})
 		send(0, reply)
+		if req.Method == "doc.set" && os.Getenv("PANE_DRAG_TEST_ECHO") == "after-ack" {
+			send(1, []byte("{\"method\":\"event\",\"params\":{\"type\":\"doc\"}}\n"))
+		}
 		if req.Method == "terminal.attach" {
 			var screen strings.Builder
 			screen.WriteString("\x1b[?1049h\x1b[?25l\x1b[48;2;45;70;90m\x1b[2J")

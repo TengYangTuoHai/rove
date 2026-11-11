@@ -180,6 +180,10 @@ func (s *Session) reload() error {
 
 // readDoc reads one machine's document ("" is this computer).
 func (s *Session) readDoc(machine string) {
+	// Wait for our writes to acknowledge their versions before applying a
+	// document echo. The UI may already be editing the next pane sizes.
+	writeMu.Lock()
+	defer writeMu.Unlock()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	params := map[string]any{"name": "herdr-app"}
@@ -223,6 +227,14 @@ func (s *Session) applyDoc(machine string, raw json.RawMessage) {
 	}
 	// A doc.get begun before a successful write can arrive after it.
 	if res.Version < s.versions[machine] {
+		return
+	}
+	// An acknowledged write's echo contains no new changes. Replacing the
+	// model with it could discard the next drag's unsaved weights. A first
+	// load (including version zero), reconnect or unreadable document still
+	// needs to be applied even when its version is already known.
+	if slot := s.docs[machine]; res.Version == s.versions[machine] && slot != nil && slot.loaded && slot.available {
+		slot.err = ""
 		return
 	}
 	s.versions[machine] = res.Version
@@ -1209,7 +1221,7 @@ func (s *Session) Machine() *string {
 // LoadError returns the last error reading the document, if any.
 func (s *Session) LoadError() error { return s.loadErr }
 
-// spacing keeps doc writes serialized.
+// writeMu serializes document reads with writes and their acknowledgements.
 var writeMu sync.Mutex
 
 // saveDoc writes every machine's share of the model, re-reading on a

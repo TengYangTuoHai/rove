@@ -695,8 +695,9 @@ func (s *Session) Swap(direction string) {
 }
 
 // SetWeights gives nodes of a tab new weights, as dragging the divider
-// between two panes does. It changes the model only: the document keeps the
-// sizes a drag leaves when the window writes it, on letting go.
+// between two panes does. Only layout changes, so notify the window without
+// reindexing focus, agents and git or saving the view on every pointer move.
+// The document keeps the final sizes when the window writes it on release.
 func (s *Session) SetWeights(tabID string, weights map[string]float64) bool {
 	found := false
 	s.mu.Lock()
@@ -715,8 +716,8 @@ func (s *Session) SetWeights(tabID string, weights map[string]float64) bool {
 		}
 	}
 	s.mu.Unlock()
-	if found {
-		s.changed()
+	if found && s.OnChange != nil {
+		s.OnChange()
 	}
 	return found
 }

@@ -101,6 +101,23 @@ func BenchmarkReplacedTabs(b *testing.B) {
 	b.ReportMetric(float64(retained), "retained-tabs/op")
 }
 
+// BenchmarkPaneWeights measures the model work on each divider movement while
+// keeping the number of visible panes constant as background tabs accumulate.
+func BenchmarkPaneWeights(b *testing.B) {
+	for _, count := range []int{1, 100} {
+		b.Run(fmt.Sprintf("%d-tabs", count), func(b *testing.B) {
+			s := performanceSession(count)
+			s.savedAt = time.Now().Add(time.Hour)
+			weights := map[string]float64{"pane-0-0": 0.4, "pane-0-1": 0.6}
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				s.SetWeights("tab-0", weights)
+			}
+		})
+	}
+}
+
 // BenchmarkPaneKeys measures the model traversal used to collect terminal views.
 func BenchmarkPaneKeys(b *testing.B) {
 	for _, count := range []int{10, 100} {

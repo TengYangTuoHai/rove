@@ -66,11 +66,10 @@ type App struct {
 	// keep it.
 	splitRatio      float32
 	agentsCollapsed bool
-	// paneDrag tells that the pointer holds a divider between panes this
-	// frame, paneDragged that it held one the frame before, so that letting
-	// go writes the sizes the drag left to the document.
-	paneDrag    bool
-	paneDragged bool
+	// paneDrag stays true while a divider is held, including frames without
+	// pointer movement. paneDirty keeps changed sizes until it is released.
+	paneDrag  bool
+	paneDirty bool
 
 	// themeName is the theme drawn now: the appearance may pick one over
 	// the theme chosen. systemDark is the desktop's appearance, and
@@ -216,7 +215,7 @@ func (a *App) View(c *ui.Context) {
 	// The edge is read before the sidebar is built, so that a drag follows
 	// the pointer in the frame it moves.
 	a.resizeHandle(c)
-	a.paneDragged, a.paneDrag = a.paneDrag, false
+	a.paneDrag = false
 	frame := t.windowFrame(c).Font(a.interfaceFont())
 	frame.Children(func() {
 		a.sidebar(c)
@@ -226,9 +225,11 @@ func (a *App) View(c *ui.Context) {
 		a.work(c)
 	})
 	a.overlays(c)
-	if a.paneDragged && !a.paneDrag {
-		// The pointer let a divider go: its panes keep the sizes it left.
-		a.S.WriteDoc()
+	if a.paneDirty && !a.paneDrag {
+		// Persist once after release. A slow core or another document write
+		// must not hold up input and painting on the UI thread.
+		a.paneDirty = false
+		go a.S.WriteDoc()
 	}
 	// A setting this frame changed goes to the file it is kept in.
 	a.saveSettings()
@@ -776,6 +777,7 @@ func (a *App) paneDivider(c *ui.Context, tab string, n *herdr.Node, box ui.Eleme
 	if !held || a.S == nil {
 		return
 	}
+	a.paneDrag = true
 	delta := dx
 	min := paneMinWidth
 	if !across {
@@ -788,8 +790,9 @@ func (a *App) paneDivider(c *ui.Context, tab string, n *herdr.Node, box ui.Eleme
 	if !ok {
 		return
 	}
-	a.paneDrag = true
-	a.S.SetWeights(tab, weights)
+	if a.S.SetWeights(tab, weights) {
+		a.paneDirty = true
+	}
 }
 
 // paneSpan is one child of a split as a divider drag reads it: the weight it
