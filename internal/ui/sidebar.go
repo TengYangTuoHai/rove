@@ -22,32 +22,57 @@ func (a *App) spaces(c *ui.Context) {
 			ui.Text(c, a.tr("Spaces")).FontSize(a.fontSize(11.5)).TextColor(t.Dim)
 			a.iconButton(c, "plus", 26, a.tr("New space"), func() { a.newSpace() })
 		})
-		ui.Scroll(c).Grow(1).Padding(0, 8, 14, 8).Children(func() {
-			ui.Column(c).FillWidth().Gap(2).Children(func() {
-				places := a.S.Places()
-				machines := a.S.Machines()
-				if len(places) == 0 && len(machines) == 0 {
-					ui.Row(c).Height(28).PaddingX(8).AlignItems(ui.Center).Children(func() {
-						ui.Text(c, a.tr("Loading…")).FontSize(a.fontSize(12)).TextColor(t.Dim)
-					})
-					return
-				}
-				if len(machines) == 0 {
-					for _, sp := range places {
-						a.spaceRow(c, sp, places, statuses)
-					}
-					return
-				}
-				names := []string{""}
-				for _, m := range machines {
-					names = append(names, m.Name)
-				}
-				for _, name := range names {
-					a.machineGroup(c, name, places, machines, statuses)
-				}
-			})
+		viewport := ui.Scroll(c).Grow(1).Padding(0, 8, 14, 8)
+		scroll := ui.Local(viewport, "sort-scroll", func() ui.ScrollState { return ui.ScrollState{} })
+		viewport.TrackScroll(scroll)
+		layout := sideReorder{}
+		viewport.Children(func() {
+			layout = a.spaceItems(c, a.S.Places(), a.S.Machines(), statuses)
 		})
+		if d, to := layout.update(viewport, scroll); to > 0 {
+			switch d.Kind {
+			case "space":
+				a.S.MoveSpace(d.ID, to)
+			case "machine":
+				a.S.MoveMachine(d.ID, to)
+			}
+		}
 	})
+}
+
+// spaceItems draws the canonical order; sideReorder moves only its visuals.
+func (a *App) spaceItems(c *ui.Context, places []*herdr.Space, machines []*herdr.Machine, statuses map[string]string) sideReorder {
+	layout := sideReorder{}
+	ui.Column(c).FillWidth().Gap(sideRowGap).Children(func() {
+		if len(places) == 0 && len(machines) == 0 {
+			ui.Row(c).Height(28).PaddingX(8).AlignItems(ui.Center).Children(func() {
+				ui.Text(c, a.tr("Loading…")).FontSize(a.fontSize(12)).TextColor(a.T.Dim)
+			})
+			return
+		}
+		if len(machines) == 0 {
+			list := sideList{}
+			for _, sp := range places {
+				row := a.spaceRow(c, sp, places, statuses)
+				list.add(row, row, sideDrag{Kind: "space", ID: sp.ID, From: herdr.SpaceMachine(sp)}, sp.Index, sideRowHeight)
+			}
+			layout.spaces = append(layout.spaces, list)
+			return
+		}
+		names := []string{""}
+		for _, m := range machines {
+			names = append(names, m.Name)
+		}
+		for i, name := range names {
+			group := a.machineGroup(c, name, places, machines, statuses)
+			group.spaces.top = layout.groups.nextY
+			layout.groups.add(group.element, group.head, sideDrag{Kind: "machine", ID: name}, i, group.height)
+			if len(group.spaces.rows) > 0 {
+				layout.spaces = append(layout.spaces, group.spaces)
+			}
+		}
+	})
+	return layout
 }
 
 // spaceStatuses names the most urgent agent of each space, by space id.
@@ -69,54 +94,12 @@ type sideDrag struct {
 	From string
 }
 
-// dropIndex is the place (1-based) MoveSpace and MoveMachine want: the half
-// of the row the pointer let go on picks before or after it, and a target
-// lower down moves up a place as the dragged one leaves the list.
-func dropIndex(row ui.Element, height float32, from, to int) int {
-	_, y, _ := row.PointerPosition()
-	return dropIndexAt(y, height, from, to)
-}
-
-// dropIndexAt is dropIndex once the pointer's height in the row is known.
-func dropIndexAt(y, height float32, from, to int) int {
-	at := to - 1
-	if y > height/2 {
-		at++
-	}
-	if from < to {
-		at--
-	}
-	return at + 1
-}
-
-// shownIndex is the 1-based place a space has in the sidebar, 0 when it is
-// not there.
-func shownIndex(places []*herdr.Space, id string) int {
-	for _, sp := range places {
-		if sp.ID == id {
-			return sp.Index
-		}
-	}
-	return 0
-}
-
-// machineAt is a machine's place among the sidebar's groups (1 = first
-// remote machine), 0 when it is not there.
-func machineAt(machines []*herdr.Machine, name string) int {
-	for i, m := range machines {
-		if m.Name == name {
-			return i + 1
-		}
-	}
-	return 0
-}
-
 // spaceRow is one space: its avatar, name, status dot and the unusual git
 // after it.
-func (a *App) spaceRow(c *ui.Context, sp *herdr.Space, places []*herdr.Space, statuses map[string]string) {
+func (a *App) spaceRow(c *ui.Context, sp *herdr.Space, places []*herdr.Space, statuses map[string]string) ui.Element {
 	t := a.T
 	spaceName := a.S.SpaceName(sp)
-	row := ui.Row(c).Height(26).FillWidth().PaddingX(8).Radius(8).AlignItems(ui.Center)
+	row := ui.Row(c).Key(sideDrag{Kind: "space", ID: sp.ID}).Height(sideRowHeight).FillWidth().PaddingX(8).Radius(8).AlignItems(ui.Center)
 	if sp.Active {
 		row.Background(t.Selected)
 	} else if row.Hovered() {
@@ -154,26 +137,6 @@ func (a *App) spaceRow(c *ui.Context, sp *herdr.Space, places []*herdr.Space, st
 	// leaves the machine it runs on.
 	machine := herdr.SpaceMachine(sp)
 	row.Drag(sideDrag{Kind: "space", ID: sp.ID, From: machine})
-	// The node takes one kind of value, so space rows and machine headers
-	// share the one sideDrag type and check what was dropped.
-	if d, ok := ui.Drop[sideDrag](row); ok {
-		switch {
-		case d.Kind == "space" && d.ID != sp.ID && d.From == machine:
-			if from := shownIndex(places, d.ID); from > 0 {
-				a.S.MoveSpace(d.ID, dropIndex(row, 26, from, sp.Index))
-			}
-		case d.Kind == "machine" && d.ID != machine && machine != "":
-			// A machine let go over another machine's rows lands beside that
-			// machine's group.
-			machines := a.S.Machines()
-			if from := machineAt(machines, d.ID); from > 0 {
-				a.S.MoveMachine(d.ID, dropIndex(row, 26, from, machineAt(machines, machine)))
-			}
-		}
-	}
-	if d, ok := ui.DragOver[sideDrag](row); ok && d.Kind == "space" && d.ID != sp.ID && d.From == machine {
-		row.Border(1, t.Accent)
-	}
 	if row.RightClicked() {
 		x, y, _ := row.PointerPosition()
 		b := row.Bounds()
@@ -186,6 +149,7 @@ func (a *App) spaceRow(c *ui.Context, sp *herdr.Space, places []*herdr.Space, st
 			{Label: a.tr("Close"), Icon: "close", Do: func() { a.requestClose("space.close", id) }},
 		})
 	}
+	return row
 }
 
 // gitChip is a space's unusual git as one compact chip.
@@ -608,7 +572,7 @@ func markColor(name string) string {
 
 // machineGroup draws one machine's spaces under its header, once a second
 // machine is known.
-func (a *App) machineGroup(c *ui.Context, name string, places []*herdr.Space, machines []*herdr.Machine, statuses map[string]string) {
+func (a *App) machineGroup(c *ui.Context, name string, places []*herdr.Space, machines []*herdr.Machine, statuses map[string]string) sideGroup {
 	t := a.T
 	var mine []*herdr.Space
 	for _, sp := range places {
@@ -616,12 +580,10 @@ func (a *App) machineGroup(c *ui.Context, name string, places []*herdr.Space, ma
 			mine = append(mine, sp)
 		}
 	}
-	rank := 0
 	var info *herdr.Machine
-	for i, m := range machines {
+	for _, m := range machines {
 		if m.Name == name {
 			info = m
-			rank = i + 1
 		}
 	}
 	connected := name == "" || (info != nil && info.Connected())
@@ -636,98 +598,92 @@ func (a *App) machineGroup(c *ui.Context, name string, places []*herdr.Space, ma
 		state = info.State
 	}
 	folded := a.foldedMachines[name]
-	head := ui.Row(c).Height(26).FillWidth().PaddingX(8).Gap(7).Radius(8).AlignItems(ui.Center)
-	head.Cursor(ui.CursorPointer)
-	var plus ui.Element
-	head.Children(func() {
-		icon := "monitor"
-		if name != "" {
-			icon = "server"
-		}
-		a.icon(c, icon, 13, t.Dim)
-		label := name
-		if label == "" {
-			label = a.tr("This computer")
-		}
-		ui.Text(c, label).FontSize(a.fontSize(11)).TextColor(t.Dim).Grow(1).Ellipsis("…")
-		if !connected {
-			ui.Text(c, a.tr(machineStateText(state))).FontSize(a.fontSize(11)).TextColor(t.Dim)
-		} else {
-			plus = ui.Box(c).Size(16, 16).Radius(4).Center()
-			if plus.Hovered() {
-				plus.Background(t.Hover)
+	group := sideGroup{height: sideRowHeight, spaces: sideList{nextY: sideRowHeight + sideRowGap}}
+	group.element = ui.Column(c).Key(sideDrag{Kind: "machine", ID: name}).FillWidth().Gap(sideRowGap)
+	group.element.Children(func() {
+		head := ui.Row(c).Key("header").Height(sideRowHeight).FillWidth().PaddingX(8).Gap(7).Radius(8).AlignItems(ui.Center)
+		group.head = head
+		head.Cursor(ui.CursorPointer)
+		var plus ui.Element
+		head.Children(func() {
+			icon := "monitor"
+			if name != "" {
+				icon = "server"
 			}
-			plus.Cursor(ui.CursorPointer)
-			plus.Children(func() { a.icon(c, "plus", 11, t.Muted) })
-			if plus.Clicked() {
-				a.newSpaceOn(name)
+			a.icon(c, icon, 13, t.Dim)
+			label := name
+			if label == "" {
+				label = a.tr("This computer")
 			}
-		}
-		ui.Box(c).Size(6, 6).Radius(3).Background(a.machineStateColor(state))
-		chevron := "chevron-down"
-		if folded {
-			chevron = "chevron-right"
-		}
-		a.icon(c, chevron, 11, t.Dim)
-	})
-	// The plus is its own hover surface; light the header only outside it, so
-	// the two never stack into a brighter patch.
-	if head.Hovered() && !(connected && plus.Hovered()) {
-		head.Background(t.Hover)
-	}
-	if head.Clicked() {
-		a.toggleMachine(name)
-	}
-	// A remote machine's header drags its group up or down the sidebar, and
-	// takes a space dragged onto it at the top of its list.
-	if name != "" {
-		head.Drag(sideDrag{Kind: "machine", ID: name})
-		if d, ok := ui.Drop[sideDrag](head); ok {
-			switch {
-			case d.Kind == "machine" && d.ID != name:
-				if from := machineAt(machines, d.ID); from > 0 {
-					a.S.MoveMachine(d.ID, dropIndex(head, 26, from, rank))
-				}
-			case d.Kind == "space" && d.From == name && len(mine) > 0:
-				a.S.MoveSpace(d.ID, mine[0].Index)
-			}
-		}
-		if d, ok := ui.DragOver[sideDrag](head); ok {
-			if (d.Kind == "machine" && d.ID != name) || (d.Kind == "space" && d.From == name) {
-				head.Border(1, t.Accent)
-			}
-		}
-	}
-	if folded {
-		return
-	}
-	if len(mine) == 0 {
-		if !a.S.MachineReady(name) {
+			ui.Text(c, label).FontSize(a.fontSize(11)).TextColor(t.Dim).Grow(1).Ellipsis("…")
 			if !connected {
-				return
+				ui.Text(c, a.tr(machineStateText(state))).FontSize(a.fontSize(11)).TextColor(t.Dim)
+			} else {
+				plus = ui.Box(c).Size(16, 16).Radius(4).Center()
+				if plus.Hovered() {
+					plus.Background(t.Hover)
+				}
+				plus.Cursor(ui.CursorPointer)
+				plus.Children(func() { a.icon(c, "plus", 11, t.Muted) })
+				if plus.Clicked() {
+					a.newSpaceOn(name)
+				}
 			}
-			ui.Row(c).Height(28).PaddingX(8).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, a.tr("Loading…")).FontSize(a.fontSize(12)).TextColor(t.Dim)
-			})
+			ui.Box(c).Size(6, 6).Radius(3).Background(a.machineStateColor(state))
+			chevron := "chevron-down"
+			if folded {
+				chevron = "chevron-right"
+			}
+			a.icon(c, chevron, 11, t.Dim)
+		})
+		// The plus is its own hover surface; light the header only outside it, so
+		// the two never stack into a brighter patch.
+		if head.Hovered() && !(connected && plus.Hovered()) {
+			head.Background(t.Hover)
+		}
+		if head.Clicked() {
+			a.toggleMachine(name)
+		}
+		// The header drags the whole group; the viewport owns its drop target.
+		if name != "" {
+			head.Drag(sideDrag{Kind: "machine", ID: name})
+		}
+		if folded {
 			return
 		}
-		row := ui.Row(c).Height(26).PaddingX(8).Gap(7).AlignItems(ui.Center).Radius(8)
-		if row.Hovered() {
-			row.Background(t.Hover)
+		if len(mine) == 0 {
+			if !a.S.MachineReady(name) {
+				if !connected {
+					return
+				}
+				group.height += sideRowGap + 28
+				ui.Row(c).Height(28).PaddingX(8).AlignItems(ui.Center).Children(func() {
+					ui.Text(c, a.tr("Loading…")).FontSize(a.fontSize(12)).TextColor(t.Dim)
+				})
+				return
+			}
+			group.height += sideRowGap + sideRowHeight
+			row := ui.Row(c).Height(sideRowHeight).PaddingX(8).Gap(7).AlignItems(ui.Center).Radius(8)
+			if row.Hovered() {
+				row.Background(t.Hover)
+			}
+			row.Cursor(ui.CursorPointer)
+			row.Children(func() {
+				a.icon(c, "plus", 12, t.Dim)
+				ui.Text(c, a.tr("New space there")).FontSize(a.fontSize(12)).TextColor(t.Dim)
+			})
+			if row.Clicked() {
+				a.newSpaceOn(name)
+			}
+			return
 		}
-		row.Cursor(ui.CursorPointer)
-		row.Children(func() {
-			a.icon(c, "plus", 12, t.Dim)
-			ui.Text(c, a.tr("New space there")).FontSize(a.fontSize(12)).TextColor(t.Dim)
-		})
-		if row.Clicked() {
-			a.newSpaceOn(name)
+		for _, sp := range mine {
+			row := a.spaceRow(c, sp, places, statuses)
+			group.spaces.add(row, row, sideDrag{Kind: "space", ID: sp.ID, From: name}, sp.Index, sideRowHeight)
+			group.height += sideRowGap + sideRowHeight
 		}
-		return
-	}
-	for _, sp := range mine {
-		a.spaceRow(c, sp, places, statuses)
-	}
+	})
+	return group
 }
 
 // toggleAgents folds the agents list to its header, or unfolds it, and keeps
