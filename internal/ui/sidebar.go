@@ -600,8 +600,8 @@ func (a *App) agentRow(c *ui.Context, ag *herdr.Agent) {
 			color = t.Muted
 		}
 		ui.Text(c, name).FontSize(a.fontSize(12.5)).TextColor(color).Grow(1).MinWidth(0).SingleLine()
-		// The list mixes every machine: a row from elsewhere says which one.
-		if ag.Machine != "" {
+		// Project headers already identify the machine for all their agents.
+		if ag.Machine != "" && a.settings.AgentsGrouping != agentsByProject {
 			a.machineChip(c, ag.Machine)
 		}
 		a.agentStatus(c, ag.Status)
