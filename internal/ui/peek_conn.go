@@ -55,6 +55,19 @@ func (c *peekConnection) Read(p []byte) (int, error) {
 	return conn.Read(p)
 }
 
+// EndError returns the attached stream's observed end, even after Close.
+func (c *peekConnection) EndError() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if stream, ok := c.conn.(interface{ EndError() error }); ok {
+		return stream.EndError()
+	}
+	if c.err != nil {
+		return c.err
+	}
+	return io.ErrClosedPipe
+}
+
 func (c *peekConnection) Write(p []byte) (int, error) {
 	conn, err := c.stream()
 	if err != nil {

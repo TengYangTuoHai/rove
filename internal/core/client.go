@@ -78,6 +78,7 @@ type Client struct {
 	mu      sync.Mutex
 	replies map[uint64]chan reply
 	streams map[uint32]chan Stream
+	ended   map[uint32]bool
 	early   map[uint32][]Stream
 	closed  bool
 	nextID  atomic.Uint64
@@ -149,9 +150,15 @@ func Connect(bin string) (*Client, error) {
 }
 
 func (c *Client) writeLoop() {
-	for frame := range c.writes {
-		if _, err := c.stdin.Write(frame); err != nil {
-			break
+	for {
+		select {
+		case <-c.done:
+			return
+		case frame := <-c.writes:
+			if _, err := c.stdin.Write(frame); err != nil {
+				c.lost()
+				return
+			}
 		}
 	}
 }
@@ -225,19 +232,37 @@ func (c *Client) readLoop(reader *bufio.Reader) {
 			item.Reason = payload
 		}
 		c.mu.Lock()
-		ch := c.streams[channel]
-		if ch == nil {
+		if kind == FrameClose {
+			if c.ended == nil {
+				c.ended = make(map[uint32]bool)
+			}
+			c.ended[channel] = true
+		}
+		if ch := c.streams[channel]; ch != nil {
+			enqueueStream(ch, item)
+		} else {
 			c.early[channel] = append(c.early[channel], item)
 		}
-		if kind == FrameClose && ch != nil {
-			delete(c.streams, channel)
-		}
 		c.mu.Unlock()
-		if ch != nil {
-			select {
-			case ch <- item:
-			default:
-			}
+	}
+}
+
+// enqueueStream must be called under c.mu. End markers must reach the reader,
+// even if output filled the queue; otherwise it can wait forever after loss.
+func enqueueStream(ch chan Stream, item Stream) {
+	select {
+	case ch <- item:
+		return
+	default:
+	}
+	if item.Kind == FrameClose && cap(ch) > 0 {
+		select {
+		case <-ch:
+		default:
+		}
+		select {
+		case ch <- item:
+		default:
 		}
 	}
 }
@@ -249,18 +274,15 @@ func (c *Client) lost() {
 		return
 	}
 	c.closed = true
-	streams := c.streams
-	c.streams = map[uint32]chan Stream{}
+	close(c.done)
+	for channel, ch := range c.streams {
+		if !c.ended[channel] {
+			enqueueStream(ch, Lost)
+		}
+	}
 	replies := c.replies
 	c.replies = map[uint64]chan reply{}
 	c.mu.Unlock()
-	close(c.done)
-	for _, ch := range streams {
-		select {
-		case ch <- Lost:
-		default:
-		}
-	}
 	for _, ch := range replies {
 		select {
 		case ch <- reply{err: errors.New("lost the core")}:
@@ -342,13 +364,7 @@ func (c *Client) Subscribe(ctx context.Context) (uint32, json.RawMessage, error)
 		return 0, nil, err
 	}
 	ch := make(chan Stream, 4096)
-	c.mu.Lock()
-	for _, item := range c.early[res.Channel] {
-		ch <- item
-	}
-	delete(c.early, res.Channel)
-	c.streams[res.Channel] = ch
-	c.mu.Unlock()
+	c.TakeStream(res.Channel, ch)
 	c.Credit(res.Channel, 1<<20)
 	return res.Channel, raw, nil
 }
@@ -379,13 +395,7 @@ func (c *Client) Attach(ctx context.Context, terminal string, cols, rows int, di
 		return 0, nil, err
 	}
 	ch := make(chan Stream, 4096)
-	c.mu.Lock()
-	for _, item := range c.early[res.Channel] {
-		ch <- item
-	}
-	delete(c.early, res.Channel)
-	c.streams[res.Channel] = ch
-	c.mu.Unlock()
+	c.TakeStream(res.Channel, ch)
 	return res.Channel, res.Term, nil
 }
 
@@ -393,13 +403,15 @@ func (c *Client) Attach(ctx context.Context, terminal string, cols, rows int, di
 // buffered frames that arrived before it.
 func (c *Client) TakeStream(channel uint32, ch chan Stream) {
 	c.mu.Lock()
+	ended := false
 	for _, item := range c.early[channel] {
-		select {
-		case ch <- item:
-		default:
-		}
+		enqueueStream(ch, item)
+		ended = ended || item.Kind == FrameClose
 	}
 	delete(c.early, channel)
+	if c.closed && !ended {
+		enqueueStream(ch, Lost)
+	}
 	c.streams[channel] = ch
 	c.mu.Unlock()
 }
@@ -447,13 +459,14 @@ func (c *Client) Focus(channel uint32, focused bool) {
 func (c *Client) Detach(channel uint32) {
 	c.mu.Lock()
 	delete(c.streams, channel)
+	delete(c.ended, channel)
 	c.mu.Unlock()
 	c.send(channel, FrameClose, nil)
 }
 
 // Close ends the connection to the core. Programs keep running.
 func (c *Client) Close() {
-	close(c.writes)
+	c.lost()
 	_ = c.stdin.Close()
 	if c.cmd.Process != nil {
 		_ = c.cmd.Process.Kill()

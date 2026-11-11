@@ -2,6 +2,8 @@ package herdr
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -28,7 +30,9 @@ type Attach struct {
 	fg     ui.Color
 	bg     ui.Color
 	cursor ui.Color
-	closed bool
+	endErr error
+	done   chan struct{}
+	once   sync.Once
 }
 
 // Attach starts viewing a terminal at the given grid size.
@@ -44,7 +48,7 @@ func (s *Session) Attach(addr string, cols, rows int, fg, bg, cursor ui.Color, c
 	if err != nil {
 		return nil, err
 	}
-	return &Attach{cl: s.Core, term: addr, ch: ch, stream: stream, fg: fg, bg: bg, cursor: cursor, cell: [2]int{cellW, cellH}}, nil
+	return &Attach{cl: s.Core, term: addr, ch: ch, stream: stream, done: make(chan struct{}), fg: fg, bg: bg, cursor: cursor, cell: [2]int{cellW, cellH}}, nil
 }
 
 func displayFacts(fg, bg, cursor ui.Color, cellW, cellH int) map[string]any {
@@ -63,26 +67,67 @@ func (a *Attach) Read(p []byte) (int, error) {
 			a.cl.Credit(a.ch, n)
 			return n, nil
 		}
-		if a.closed {
+		if a.endErr != nil {
+			err := a.endErr
 			a.mu.Unlock()
-			return 0, io.EOF
+			return 0, err
 		}
 		a.mu.Unlock()
-		item, ok := <-a.stream
-		if !ok {
-			return 0, io.EOF
-		}
-		switch item.Kind {
-		case core.FrameData:
-			a.mu.Lock()
-			a.buf = append(a.buf, item.Data...)
-			a.mu.Unlock()
-		case core.FrameClose:
-			a.mu.Lock()
-			a.closed = true
-			a.mu.Unlock()
+		select {
+		case <-a.done:
+			a.setEnd(io.ErrClosedPipe)
+		case item, ok := <-a.stream:
+			if !ok {
+				a.setEnd(errors.New("terminal stream interrupted"))
+				continue
+			}
+			switch item.Kind {
+			case core.FrameData:
+				a.mu.Lock()
+				a.buf = append(a.buf, item.Data...)
+				a.mu.Unlock()
+			case core.FrameClose:
+				a.setEnd(streamEnd(item))
+			}
 		}
 	}
+}
+
+// streamEnd only treats a confirmed final process exit as EOF. A stream can
+// also end when a kept program is lost and the core is about to restart it.
+func streamEnd(item core.Stream) error {
+	if item.Data == nil {
+		return errors.New("lost the core connection")
+	}
+	var close struct {
+		Reason string `json:"reason"`
+	}
+	if json.Unmarshal(item.Data, &close) == nil {
+		switch close.Reason {
+		case "exited", "killed":
+			return io.EOF
+		case "":
+		default:
+			return fmt.Errorf("terminal stream interrupted: %s", close.Reason)
+		}
+	}
+	return errors.New("terminal stream interrupted")
+}
+
+func (a *Attach) setEnd(err error) {
+	a.mu.Lock()
+	if a.endErr == nil {
+		a.endErr = err
+	}
+	a.mu.Unlock()
+}
+
+// EndError reports why the stream ended; io.EOF means a confirmed process exit.
+// It is nil until Read observes an end, and is safe to call after the view ends.
+func (a *Attach) EndError() error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.endErr
 }
 
 // Write sends what is typed to the program.
@@ -93,7 +138,10 @@ func (a *Attach) Write(p []byte) (int, error) {
 
 // Close ends the view; the program keeps running.
 func (a *Attach) Close() error {
-	a.cl.Detach(a.ch)
+	a.once.Do(func() {
+		close(a.done)
+		a.cl.Detach(a.ch)
+	})
 	return nil
 }
 

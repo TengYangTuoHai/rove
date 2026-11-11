@@ -448,19 +448,58 @@ func (s *Session) Split(direction string, argv []string) (*PaneInfo, error) {
 
 // ClosePane removes a pane and ends its terminal, or the tab if it was the last.
 func (s *Session) ClosePane(pane string) {
+	s.closePane(pane, "", false)
+}
+
+// ClosePaneIfTerminal removes a pane only if it still owns expectedTerminal and
+// is not temporarily showing another terminal. It returns whether it closed.
+// This removes the pane without killing the terminal: a finished terminal may
+// have restarted since the view was closed.
+func (s *Session) ClosePaneIfTerminal(pane, expectedTerminal string) bool {
+	if pane == "" || expectedTerminal == "" {
+		return false
+	}
+	return s.closePane(pane, expectedTerminal, true)
+}
+
+func (s *Session) closePane(pane, expected string, check bool) bool {
 	s.mu.Lock()
-	var addr, tabID string
-	var last bool
-	for _, sp := range s.spaces {
-		for _, t := range sp.Tabs {
+	var addr string
+	closed := false
+search:
+	for si, sp := range s.spaces {
+		for ti, t := range sp.Tabs {
 			node := t.Root.find(pane)
 			if node == nil {
 				continue
 			}
-			tabID = t.ID
+			if check && (node.Type != "block" || node.terminal() != expected || s.query[pane] != "") {
+				s.mu.Unlock()
+				return false
+			}
+			closed = true
 			addr = node.terminal()
-			last = len(t.Root.blocks()) <= 1
-			if !last {
+			last := len(t.Root.blocks()) <= 1
+			if last {
+				sp.Tabs = append(sp.Tabs[:ti], sp.Tabs[ti+1:]...)
+				delete(s.tabs, t.ID)
+				if s.activeTab[sp.ID] == t.ID {
+					s.activeTab[sp.ID] = ""
+					if len(sp.Tabs) > 0 {
+						s.activeTab[sp.ID] = sp.Tabs[min(ti, len(sp.Tabs)-1)].ID
+					}
+				}
+				if len(sp.Tabs) == 0 {
+					s.spaces = append(s.spaces[:si], s.spaces[si+1:]...)
+					delete(s.activeTab, sp.ID)
+					if s.active == sp.ID {
+						s.active = ""
+						if len(s.spaces) > 0 {
+							s.active = s.spaces[max(0, si-1)].ID
+						}
+					}
+				}
+			} else {
 				parent := t.Root.parent(pane)
 				if parent != nil {
 					for i, c := range parent.Children {
@@ -515,18 +554,23 @@ func (s *Session) ClosePane(pane string) {
 					}
 				}
 			}
+			delete(s.query, pane)
+			delete(s.borrowed, pane)
+			break search
 		}
 	}
 	s.mu.Unlock()
-	if addr != "" {
-		s.KillTerminal(addr)
+	if !closed {
+		return false
 	}
-	if last && tabID != "" {
-		s.CloseTab(tabID)
-		return
+	// A checked close comes from a finished terminal view. Its old address
+	// may have restarted; removing the pane must not kill that process.
+	if !check && addr != "" && s.Core != nil {
+		s.KillTerminal(addr)
 	}
 	s.saveDoc()
 	s.changed()
+	return true
 }
 
 // absorbPaneSize gives a neighbor the removed pane's share in a flat split.

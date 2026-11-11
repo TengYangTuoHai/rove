@@ -34,13 +34,14 @@ func runFullscreenCore() {
 	in := bufio.NewReader(os.Stdin)
 	_, _ = in.ReadString('\n')
 	fmt.Fprintln(os.Stdout, `{"jsonrpc":"2.0","id":0,"result":{}}`)
-	send := func(channel uint32, payload []byte) {
+	sendFrame := func(channel uint32, kind byte, payload []byte) {
 		header := make([]byte, 9)
 		binary.LittleEndian.PutUint32(header, channel)
-		header[4] = core.FrameData
+		header[4] = kind
 		binary.LittleEndian.PutUint32(header[5:], uint32(len(payload)))
 		_, _ = os.Stdout.Write(append(header, payload...))
 	}
+	send := func(channel uint32, payload []byte) { sendFrame(channel, core.FrameData, payload) }
 	leaf := func(id string) *herdr.Node {
 		return &herdr.Node{ID: id, Type: "block", Content: &herdr.NodeContent{Terminal: "t" + id}}
 	}
@@ -58,6 +59,8 @@ func runFullscreenCore() {
 	tabs = append(tabs, map[string]any{"id": "broken", "root": leaf("broken")})
 	space["tabs"] = tabs
 	channel := uint32(10)
+	endedTestStream := false
+	docVersion := 1
 	for {
 		header := make([]byte, 9)
 		if _, err := io.ReadFull(in, header); err != nil {
@@ -76,6 +79,7 @@ func runFullscreenCore() {
 			Params struct {
 				Cols, Rows int
 				Terminal   string
+				Value      json.RawMessage
 			}
 		}
 		_ = json.Unmarshal(payload, &req)
@@ -87,9 +91,26 @@ func runFullscreenCore() {
 		var result any = map[string]any{}
 		switch req.Method {
 		case "doc.get":
-			result = map[string]any{"version": 1, "value": doc}
+			result = map[string]any{"version": docVersion, "value": doc}
+		case "doc.set":
+			if os.Getenv("PANE_FINISHED_TEST") == "1" {
+				_ = json.Unmarshal(req.Params.Value, &doc)
+				docVersion++
+				result = map[string]any{"version": docVersion}
+			}
+		case "terminal.get":
+			if os.Getenv("PANE_FINISHED_TEST") == "1" {
+				result = &herdr.Terminal{Address: req.Params.Terminal, State: "finished"}
+			}
+		case "terminal.run":
+			if os.Getenv("PANE_FINISHED_TEST") == "1" {
+				result = map[string]any{"address": "tnew"}
+			}
 		case "terminal.list", "events.subscribe":
 			terminals := []any{}
+			if os.Getenv("PANE_FINISHED_TEST") == "1" {
+				terminals = append(terminals, &herdr.Terminal{Address: "tbroken", State: "finished"})
+			}
 			if os.Getenv("TAB_CLOSE_TEST_BUSY") == "1" {
 				terminals = append(terminals, &herdr.Terminal{Address: "tfull", State: "live", Argv: []string{"sleep", "60"}})
 			}
@@ -108,6 +129,17 @@ func runFullscreenCore() {
 			}
 			fmt.Fprintf(&screen, "\x1b[1;3HFIRST %dx%d\x1b[%d;%dHEND", req.Params.Cols, req.Params.Rows, req.Params.Rows, req.Params.Cols-3)
 			send(channel, []byte(screen.String()))
+			if req.Params.Terminal == "tleft" && !endedTestStream {
+				switch os.Getenv("STREAM_END_TEST") {
+				case "disconnect":
+					os.Exit(0)
+				case "signaled", "exited":
+					endedTestStream = true
+					reason := os.Getenv("STREAM_END_TEST")
+					payload, _ := json.Marshal(map[string]any{"reason": reason})
+					sendFrame(channel, core.FrameClose, payload)
+				}
+			}
 		}
 	}
 }

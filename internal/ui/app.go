@@ -3,7 +3,9 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -87,7 +89,10 @@ type App struct {
 	mu            sync.Mutex
 	terms         map[string]*paneTerm
 	starting      map[string]bool
+	startTokens   map[string]uint64
+	nextStart     uint64
 	failedTerms   map[string]bool // failed attachments wait until the pane is shown again
+	recovering    map[string]bool // pane recovery requests in flight
 	nextToastID   uint64
 	termUsed      uint64
 	terminalStyle terminal.Font       // guarded by mu; attachment goroutines use the latest choice
@@ -153,7 +158,9 @@ func NewApp(s *herdr.Session, theme *Theme) *App {
 		terminalPrefs:  terminalPreferences{clipboard: true, contrast: 1},
 		terms:          map[string]*paneTerm{},
 		starting:       map[string]bool{},
+		startTokens:    map[string]uint64{},
 		failedTerms:    map[string]bool{},
+		recovering:     map[string]bool{},
 		foldedMachines: map[string]bool{},
 	}
 }
@@ -1037,6 +1044,7 @@ func (a *App) split(direction string) {
 func (a *App) terminalView(c *ui.Context, p herdr.PaneInfo) {
 	term := a.terminalFor(p)
 	if term == nil {
+		a.terminalFailureView(c, p)
 		return
 	}
 	view := terminal.View(c, term).Fill()
@@ -1087,19 +1095,23 @@ func (a *App) terminalFor(p herdr.PaneInfo) *terminal.Terminal {
 		return nil
 	}
 	a.starting[key] = true
+	a.nextStart++
+	token := a.nextStart
+	a.startTokens[key] = token
 	a.mu.Unlock()
 
-	go a.startTerminal(key, p)
+	go a.startTerminal(key, p, token)
 	return nil
 }
 
 // startTerminal attaches to the pane's terminal and makes its view.
-func (a *App) startTerminal(key string, p herdr.PaneInfo) {
+func (a *App) startTerminal(key string, p herdr.PaneInfo, token uint64) {
 	t := a.T
-	conn := newPeekConnection(func(cols, rows, cellW, cellH int) (peekStream, error) {
+	var conn *peekConnection
+	conn = newPeekConnection(func(cols, rows, cellW, cellH int) (peekStream, error) {
 		attached, err := a.S.Attach(p.Terminal, cols, rows, t.TerminalForeground, t.Background, t.Cursor, cellW, cellH)
 		if err != nil {
-			a.terminalFailed(key, a.tr("Cannot show the terminal"), err)
+			a.terminalFailedFor(key, conn, a.tr("Cannot show the terminal"), err)
 			return nil, err
 		}
 		return attached, nil
@@ -1118,11 +1130,11 @@ func (a *App) startTerminal(key string, p herdr.PaneInfo) {
 	term, err := terminal.New(opts)
 	if err != nil {
 		_ = conn.Close()
-		a.terminalFailed(key, a.tr("Cannot start the terminal"), err)
+		a.terminalStartFailed(key, token, a.tr("Cannot start the terminal"), err)
 		return
 	}
 	a.mu.Lock()
-	if !a.starting[key] {
+	if !a.starting[key] || a.startTokens[key] != token {
 		a.mu.Unlock()
 		_ = term.Close()
 		return
@@ -1133,10 +1145,18 @@ func (a *App) startTerminal(key string, p herdr.PaneInfo) {
 	entry := &paneTerm{key: key, pane: p.Pane, addr: p.Terminal, term: term, conn: conn, lastUsed: a.termUsed}
 	a.terms[key] = entry
 	delete(a.starting, key)
+	delete(a.startTokens, key)
 	a.mu.Unlock()
 	a.Repaint()
 	go func() {
 		<-term.Done()
+		if err := conn.EndError(); !errors.Is(err, io.EOF) {
+			if err == nil {
+				err = io.ErrClosedPipe
+			}
+			a.terminalFailedFor(key, conn, a.tr("Cannot show the terminal"), err)
+			return
+		}
 		a.mu.Lock()
 		current := a.terms[key] == entry && !a.failedTerms[key]
 		a.mu.Unlock()
@@ -1145,7 +1165,7 @@ func (a *App) startTerminal(key string, p herdr.PaneInfo) {
 				a.S.RefreshMachines()
 				a.Repaint()
 			} else {
-				a.S.ClosePane(p.Pane)
+				a.S.ClosePaneIfTerminal(p.Pane, p.Terminal)
 			}
 		}
 	}()
@@ -1154,10 +1174,29 @@ func (a *App) startTerminal(key string, p herdr.PaneInfo) {
 // terminalFailed reports a failed attachment once per visible pane. Redrawing
 // the warning or dismissing it must not immediately start another failing attach.
 func (a *App) terminalFailed(key, title string, err error) {
+	a.terminalFailedFor(key, nil, title, err)
+}
+
+// terminalFailedFor ignores a late failure from a replaced connection.
+func (a *App) terminalFailedFor(key string, expected *peekConnection, title string, err error) {
+	a.failTerminal(key, expected, 0, title, err)
+}
+
+func (a *App) terminalStartFailed(key string, token uint64, title string, err error) {
+	a.failTerminal(key, nil, token, title, err)
+}
+
+func (a *App) failTerminal(key string, expected *peekConnection, token uint64, title string, err error) {
 	a.mu.Lock()
-	delete(a.starting, key)
-	a.failedTerms[key] = true
 	entry := a.terms[key]
+	if expected != nil && (entry == nil || entry.conn != expected) ||
+		token != 0 && (!a.starting[key] || a.startTokens[key] != token) {
+		a.mu.Unlock()
+		return
+	}
+	delete(a.starting, key)
+	delete(a.startTokens, key)
+	a.failedTerms[key] = true
 	delete(a.terms, key)
 	a.mu.Unlock()
 	if entry != nil {
@@ -1183,6 +1222,7 @@ func (a *App) collect() {
 	for key := range a.starting {
 		if !live[key] {
 			delete(a.starting, key)
+			delete(a.startTokens, key)
 		}
 	}
 	for key := range a.failedTerms {

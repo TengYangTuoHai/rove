@@ -1417,6 +1417,66 @@ func (msgs Messages) CannotShowTheTerminal() string {
 	return Catalog.Format(msgs.locale, "cannotShowTheTerminal", nil)
 }
 
+// TerminalCouldNotBeOpened says "The terminal could not be opened."
+// in the language the app shows.
+func TerminalCouldNotBeOpened() string { return In(i18n.Locale()).TerminalCouldNotBeOpened() }
+
+// TerminalCouldNotBeOpened says "The terminal could not be opened."
+// in the language of msgs.
+func (msgs Messages) TerminalCouldNotBeOpened() string {
+	return Catalog.Format(msgs.locale, "terminalCouldNotBeOpened", nil)
+}
+
+// TerminalFinishedNewShell says "This terminal has finished. A new shell cannot restore the previous process."
+// in the language the app shows.
+func TerminalFinishedNewShell() string { return In(i18n.Locale()).TerminalFinishedNewShell() }
+
+// TerminalFinishedNewShell says "This terminal has finished. A new shell cannot restore the previous process."
+// in the language of msgs.
+func (msgs Messages) TerminalFinishedNewShell() string {
+	return Catalog.Format(msgs.locale, "terminalFinishedNewShell", nil)
+}
+
+// StartingNewShell says "Starting a new shell…"
+// in the language the app shows.
+func StartingNewShell() string { return In(i18n.Locale()).StartingNewShell() }
+
+// StartingNewShell says "Starting a new shell…"
+// in the language of msgs.
+func (msgs Messages) StartingNewShell() string {
+	return Catalog.Format(msgs.locale, "startingNewShell", nil)
+}
+
+// StartNewShell says "Start a new shell"
+// in the language the app shows.
+func StartNewShell() string { return In(i18n.Locale()).StartNewShell() }
+
+// StartNewShell says "Start a new shell"
+// in the language of msgs.
+func (msgs Messages) StartNewShell() string {
+	return Catalog.Format(msgs.locale, "startNewShell", nil)
+}
+
+// CannotStartNewShell says "Cannot start a new shell"
+// in the language the app shows.
+func CannotStartNewShell() string { return In(i18n.Locale()).CannotStartNewShell() }
+
+// CannotStartNewShell says "Cannot start a new shell"
+// in the language of msgs.
+func (msgs Messages) CannotStartNewShell() string {
+	return Catalog.Format(msgs.locale, "cannotStartNewShell", nil)
+}
+
+// RetryTerminal says "Retry"
+// in the language the app shows.
+func RetryTerminal() string { return In(i18n.Locale()).RetryTerminal() }
+
+// RetryTerminal says "Retry"
+// in the language of msgs.
+func (msgs Messages) RetryTerminal() string {
+	return Catalog.Format(msgs.locale, "retryTerminal", nil)
+}
+
 // CannotKeepTheSubAgent says "Cannot keep the sub-agent"
 // in the language the app shows.
 func CannotKeepTheSubAgent() string { return In(i18n.Locale()).CannotKeepTheSubAgent() }

@@ -30,34 +30,35 @@ type Session struct {
 	Core     *core.Client
 	OnChange func() // called (on any goroutine) when something changed
 
-	mu            sync.Mutex
-	spaces        []*Space
-	docs          map[string]*docSlot
-	versions      map[string]uint64
-	machines      []*Machine
-	machineByName map[string]*Machine
-	machineOrder  []string // the order the person dragged the groups into
-	machineSig    string
-	homes         map[string]string
-	wantActive    string
-	terminals     map[string]*Terminal
-	order         []string
-	active        string
-	activeTab     map[string]string
-	tabs          map[string]*tabView
-	query         map[string]string // pane -> terminal shown in its place
-	borrowed      map[string]string // pane -> the terminal the pane really runs
-	git           map[string]gitInfo
-	gitBusy       map[string]bool
-	agents        []*Agent
-	alertsReady   bool
-	alertStatuses map[string]string
-	agentAlerts   []Agent
-	agentSeq      int
-	seen          map[string]bool
-	subCh         uint32
-	loadErr       error
-	savedAt       time.Time
+	mu             sync.Mutex
+	spaces         []*Space
+	docs           map[string]*docSlot
+	versions       map[string]uint64
+	machines       []*Machine
+	machineByName  map[string]*Machine
+	machineOrder   []string // the order the person dragged the groups into
+	machineSig     string
+	homes          map[string]string
+	wantActive     string
+	terminals      map[string]*Terminal
+	order          []string
+	active         string
+	activeTab      map[string]string
+	tabs           map[string]*tabView
+	query          map[string]string          // pane -> terminal shown in its place
+	borrowed       map[string]string          // pane -> the terminal the pane really runs
+	recoverUnknown map[string]recoveryUnknown // pane -> an unconfirmed recovery attempt
+	git            map[string]gitInfo
+	gitBusy        map[string]bool
+	agents         []*Agent
+	alertsReady    bool
+	alertStatuses  map[string]string
+	agentAlerts    []Agent
+	agentSeq       int
+	seen           map[string]bool
+	subCh          uint32
+	loadErr        error
+	savedAt        time.Time
 }
 
 // Agent is one terminal whose program reports what it is doing.
@@ -219,6 +220,10 @@ func (s *Session) applyDoc(machine string, raw json.RawMessage) {
 	}
 	if s.versions == nil {
 		s.versions = map[string]uint64{}
+	}
+	// A doc.get begun before a successful write can arrive after it.
+	if res.Version < s.versions[machine] {
+		return
 	}
 	s.versions[machine] = res.Version
 	var d docFile
@@ -1230,6 +1235,20 @@ func (s *Session) saveDoc() {
 	}
 	var writes []write
 	for name, tag := range machines {
+		// An unacknowledged recovery write may have committed. A snapshot of
+		// the old pane must not overwrite it while its outcome is unknown.
+		uncertain := false
+		for pane, pending := range s.recoverUnknown {
+			if pending.write && pending.machine == name {
+				if node := s.findPaneLocked(pane); node != nil && node.terminal() == pending.expected {
+					uncertain = true
+					break
+				}
+			}
+		}
+		if uncertain {
+			continue
+		}
 		if name != "" {
 			if m := s.machineByName[name]; m == nil || !m.Connected() {
 				continue
