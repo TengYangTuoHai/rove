@@ -125,6 +125,7 @@ type settingsState struct {
 	SidebarOpen     bool
 	SidebarWidth    float32
 	AgentsCollapsed bool
+	AgentsGrouping  string // status or project; projects are machine + working directory
 	FoldedMachines  map[string]bool
 
 	Search     string
@@ -163,6 +164,7 @@ func defaultSettings() settingsState {
 		Telemetry:       true,
 		SidebarOpen:     true,
 		SidebarWidth:    268,
+		AgentsGrouping:  agentsByStatus,
 		FoldedMachines:  map[string]bool{},
 	}
 }

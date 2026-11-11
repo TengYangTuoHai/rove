@@ -37,6 +37,7 @@ type Session struct {
 	machines       []*Machine
 	machineByName  map[string]*Machine
 	machineOrder   []string // the order the person dragged the groups into
+	spaceOrder     []string // this screen's dragged order, including spaces not loaded yet
 	machineSig     string
 	homes          map[string]string
 	wantActive     string
@@ -319,6 +320,7 @@ func (s *Session) replaceMachine(machine string, spaces []*Space) {
 		s.wantActive = ""
 	}
 	orderSpaces(s.spaces)
+	s.restoreSpaceOrderLocked()
 }
 
 // machineTag turns "" into the nil the model uses for this computer.

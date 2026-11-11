@@ -360,9 +360,19 @@ func sortedMachines(spaces []*Space) []string {
 	return out
 }
 
-// splitEnv is what the app tells a program about itself, as Herdr does.
+// splitEnv is what the app tells a program about its terminal view.
 func splitEnv() map[string]string {
-	return map[string]string{"TERM": "xterm-256color", "COLORTERM": "truecolor", "TERM_PROGRAM": "herdr"}
+	env := map[string]string{"TERM": "xterm-256color", "COLORTERM": "truecolor", "TERM_PROGRAM": "herdr"}
+	// Rove's MyGo views support Kitty graphics. The core answers DA1 before
+	// forwarding a viewer's graphics reply, so dsh-tui's DA1 probe barrier
+	// can otherwise finish before it learns that images are supported.
+	// Advertise the known protocol while keeping an explicit user override.
+	protocol, set := os.LookupEnv("DSH_TUI_IMAGE_PROTOCOL")
+	if !set || protocol == "" {
+		protocol = "kitty"
+	}
+	env["DSH_TUI_IMAGE_PROTOCOL"] = protocol
+	return env
 }
 
 // trimQ removes one pair of surrounding quotes, for terminal titles.

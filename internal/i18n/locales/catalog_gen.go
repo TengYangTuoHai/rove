@@ -299,6 +299,46 @@ func (msgs Messages) ByAgent() string {
 	return Catalog.Format(msgs.locale, "byAgent", nil)
 }
 
+// GroupAgents says "Group agents"
+// in the language the app shows.
+func GroupAgents() string { return In(i18n.Locale()).GroupAgents() }
+
+// GroupAgents says "Group agents"
+// in the language of msgs.
+func (msgs Messages) GroupAgents() string {
+	return Catalog.Format(msgs.locale, "groupAgents", nil)
+}
+
+// ShowByStatus says "Show by status"
+// in the language the app shows.
+func ShowByStatus() string { return In(i18n.Locale()).ShowByStatus() }
+
+// ShowByStatus says "Show by status"
+// in the language of msgs.
+func (msgs Messages) ShowByStatus() string {
+	return Catalog.Format(msgs.locale, "showByStatus", nil)
+}
+
+// ShowByProject says "Show by project"
+// in the language the app shows.
+func ShowByProject() string { return In(i18n.Locale()).ShowByProject() }
+
+// ShowByProject says "Show by project"
+// in the language of msgs.
+func (msgs Messages) ShowByProject() string {
+	return Catalog.Format(msgs.locale, "showByProject", nil)
+}
+
+// UnknownProject says "Unknown project"
+// in the language the app shows.
+func UnknownProject() string { return In(i18n.Locale()).UnknownProject() }
+
+// UnknownProject says "Unknown project"
+// in the language of msgs.
+func (msgs Messages) UnknownProject() string {
+	return Catalog.Format(msgs.locale, "unknownProject", nil)
+}
+
 // On says "On"
 // in the language the app shows.
 func On() string { return In(i18n.Locale()).On() }

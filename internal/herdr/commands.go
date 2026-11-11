@@ -173,8 +173,14 @@ func (s *Session) MoveSpace(id string, index int) {
 			at = clamp(at, first, last+1)
 		}
 		s.spaces = append(s.spaces[:at], append([]*Space{sp}, s.spaces[at:]...)...)
+		s.rememberSpaceOrderLocked(sp.Machine)
 	}
 	s.mu.Unlock()
+	if from < 0 {
+		return
+	}
+	// Keep the explicit drag locally before waiting for shared document I/O.
+	s.SaveView()
 	s.saveDoc()
 	s.changed()
 }

@@ -91,6 +91,10 @@ MyGo 可构建 macOS `.app`、Windows 应用目录和 Linux 软件包。生成 D
 
 Rove 默认将 `settings.json`、`keys.json` 和 `view.json` 保存在 `~/.config/rove`。设置 `XDG_CONFIG_HOME` 后，配置位于其 `rove` 子目录；设置 `ROVE_HOME` 可直接指定配置目录。设置和快捷键可在应用内修改。
 
+Spaces 的拖动顺序会保存在 `view.json`，在重启和机器文档刷新后恢复；每个空间仍留在原来的机器中。Agents 标题旁的分组按钮可切换“按状态显示”和“按项目显示”，并记住选择。项目按机器和工作目录区分。
+
+Rove 支持 Kitty 图片协议，新建终端会通过 `DSH_TUI_IMAGE_PROTOCOL=kitty` 告知 dsh-tui，避免核心与窗口的探测回包乱序导致图片被误判为不可用。Rove 启动环境中显式设置的协议会保留。已存在的终端保留原环境，可新建终端，或用 `DSH_TUI_IMAGE_PROTOCOL=kitty dsh-tui` 启动。
+
 | 操作 | macOS | Linux / Windows |
 | --- | --- | --- |
 | 命令面板 | `Cmd+Shift+P` | `Ctrl+Shift+P` |

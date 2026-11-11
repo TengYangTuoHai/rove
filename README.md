@@ -91,6 +91,10 @@ MyGo builds macOS `.app` bundles, Windows app directories, and Linux packages. D
 
 Rove stores `settings.json`, `keys.json`, and `view.json` in `~/.config/rove` by default. Set `XDG_CONFIG_HOME` to use its `rove` subdirectory, or set `ROVE_HOME` to choose the configuration directory directly. Settings and shortcuts can be changed in the app.
 
+Dragged space order is saved in `view.json` and restored after restarts and machine document refreshes; spaces stay on their original machines. The grouping button beside Agents switches between status and project grouping and remembers your choice. Projects are identified by machine and working directory.
+
+Rove supports Kitty graphics and sets `DSH_TUI_IMAGE_PROTOCOL=kitty` in new terminals so dsh-tui can use images even when the core's query replies arrive before the window's graphics reply. Explicit protocol choices in Rove's launch environment are preserved. Existing terminals keep their original environment; open a new terminal or launch with `DSH_TUI_IMAGE_PROTOCOL=kitty dsh-tui`.
+
 | Action | macOS | Linux / Windows |
 | --- | --- | --- |
 | Command palette | `Cmd+Shift+P` | `Ctrl+Shift+P` |

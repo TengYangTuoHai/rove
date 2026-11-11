@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"path"
 	"sort"
 	"strings"
 
@@ -219,6 +220,7 @@ func (a *App) agents(c *ui.Context) {
 			ui.Spacer(c)
 			a.agentCount(c, "blocked", blocked)
 			a.agentCount(c, "working", working)
+			a.agentGroupingButton(c)
 			chevron := ui.Box(c).Size(20, 20).Radius(4).Center()
 			if chevron.Hovered() {
 				chevron.Background(t.Hover)
@@ -247,7 +249,7 @@ func (a *App) agents(c *ui.Context) {
 		}
 		ui.Scroll(c).Grow(1).Children(func() {
 			ui.Column(c).FillWidth().PaddingX(8).Gap(2).Children(func() {
-				a.agentGroups(c, list)
+				a.agentGroups(c, list, a.S.Terminals(), a.S.Places())
 			})
 		})
 	})
@@ -265,6 +267,44 @@ func (a *App) agentCount(c *ui.Context, word string, n int) {
 	})
 }
 
+const (
+	agentsByStatus  = "status"
+	agentsByProject = "project"
+)
+
+// agentGroupingButton keeps grouping separate from folding the whole list.
+func (a *App) agentGroupingButton(c *ui.Context) {
+	button := ui.ButtonBase(c).Size(20, 20).Radius(4).Center().Cursor(ui.CursorPointer).
+		Label(a.tr("Group agents")).Tooltip(a.tr("Group agents"))
+	if button.Hovered() {
+		button.Background(a.T.Hover)
+	}
+	button.Children(func() {
+		icon := "layers"
+		if a.settings.AgentsGrouping == agentsByProject {
+			icon = "folder"
+		}
+		a.icon(c, icon, 14, a.T.Dim)
+	})
+	if button.Clicked() {
+		b := button.Bounds()
+		a.openMenuAt(b.X, b.Y+b.H, a.agentGroupingMenu())
+	}
+}
+
+func (a *App) agentGroupingMenu() []MenuItem {
+	items := []MenuItem{
+		{Label: a.tr("Show by status"), Icon: "layers", Do: func() { a.settings.AgentsGrouping = agentsByStatus; a.Repaint() }},
+		{Label: a.tr("Show by project"), Icon: "folder", Do: func() { a.settings.AgentsGrouping = agentsByProject; a.Repaint() }},
+	}
+	selected := 0
+	if a.settings.AgentsGrouping == agentsByProject {
+		selected = 1
+	}
+	items[selected].Icon = "check"
+	return items
+}
+
 var agentSections = []struct {
 	word  string
 	label string
@@ -275,11 +315,10 @@ var agentSections = []struct {
 	{"idle", "Idle"},
 }
 
-// agentGroups draws the agents by priority, under section headers, each
-// agent's own sub-agents under its row.
-func (a *App) agentGroups(c *ui.Context, list []*herdr.Agent) {
+// agentGroups draws status or project sections, keeping each agent's own
+// sub-agents under its row.
+func (a *App) agentGroups(c *ui.Context, list []*herdr.Agent, all []*herdr.Terminal, places []*herdr.Space) {
 	t := a.T
-	all := a.S.Terminals()
 	shown := map[string]bool{}
 	for _, ag := range list {
 		shown[ag.Address] = true
@@ -290,6 +329,32 @@ func (a *App) agentGroups(c *ui.Context, list []*herdr.Agent) {
 	for _, ag := range list {
 		subs[ag.Address] = subAgents(all, shown, ag.Address, nil, 0)
 		section[ag.Address] = sectionWord(ag.Status, subs[ag.Address])
+	}
+	if a.settings.AgentsGrouping == agentsByProject {
+		for _, group := range agentProjects(list, all, places, section) {
+			label := group.Label
+			if group.Folder == "" {
+				label = a.tr("Unknown project")
+			}
+			head := ui.Row(c).Height(30).FillWidth().Padding(8, 8, 0, 8).Gap(6).AlignItems(ui.Center).
+				Tooltip(group.Folder)
+			head.Children(func() {
+				ui.Text(c, label).FontSize(a.fontSize(11)).FontWeight(500).TextColor(t.Dim).
+					Shrink(1).MinWidth(0).SingleLine()
+				ui.Text(c, itoa(len(group.Agents))).FontSize(a.fontSize(11)).TextColor(t.Dim)
+				ui.Spacer(c)
+				if group.Machine != "" {
+					a.machineChip(c, group.Machine)
+				}
+			})
+			for _, ag := range group.Agents {
+				a.agentRow(c, ag)
+				for _, sub := range subs[ag.Address] {
+					a.subAgentRow(c, sub)
+				}
+			}
+		}
+		return
 	}
 	for _, sec := range agentSections {
 		var mine []*herdr.Agent
@@ -315,6 +380,108 @@ func (a *App) agentGroups(c *ui.Context, list []*herdr.Agent) {
 			}
 		}
 	}
+}
+
+// agentProject identifies a working directory on one machine. Names of spaces
+// and repositories are presentation only: neither identifies a project.
+type agentProject struct {
+	Machine string
+	Folder  string
+}
+
+type agentProjectGroup struct {
+	agentProject
+	Label  string
+	Agents []*herdr.Agent
+}
+
+// agentProjects resolves the same cwd as a pane (foreground, terminal, space),
+// without filesystem access: a remote path belongs to its remote machine.
+func agentProjects(list []*herdr.Agent, all []*herdr.Terminal, places []*herdr.Space, sections map[string]string) []agentProjectGroup {
+	terminals := make(map[string]*herdr.Terminal, len(all))
+	for _, term := range all {
+		terminals[term.Address] = term
+	}
+	spaceFolders := make(map[[2]string]string, len(places))
+	for _, sp := range places {
+		spaceFolders[[2]string{herdr.SpaceMachine(sp), sp.ID}] = sp.Folder
+	}
+	groups := []agentProjectGroup{}
+	indices := map[agentProject]int{}
+	for _, ag := range list {
+		dir := ""
+		if term := terminals[ag.Address]; term != nil {
+			if term.Foreground != nil {
+				dir = term.Foreground.Cwd
+			}
+			if dir == "" {
+				dir = term.Cwd
+			}
+		}
+		if dir == "" {
+			dir = spaceFolders[[2]string{ag.Machine, ag.Space}]
+		}
+		if dir != "" {
+			// Windows cwd may also arrive from a machine running Windows.
+			if (len(dir) > 2 && dir[1] == ':' && (dir[2] == '\\' || dir[2] == '/')) || strings.HasPrefix(dir, `\\`) {
+				dir = strings.ReplaceAll(dir, `\`, "/")
+			}
+			dir = path.Clean(dir)
+		}
+		project := agentProject{Machine: ag.Machine, Folder: dir}
+		at, ok := indices[project]
+		if !ok {
+			at = len(groups)
+			indices[project] = at
+			label := ""
+			if dir != "" {
+				label = path.Base(dir)
+			}
+			groups = append(groups, agentProjectGroup{agentProject: project, Label: label})
+		}
+		groups[at].Agents = append(groups[at].Agents, ag)
+	}
+	// A basename is compact until it becomes ambiguous; then show the full
+	// path. A remote machine also has its own chip in the project header.
+	names := map[string]int{}
+	for _, group := range groups {
+		names[group.Label]++
+	}
+	for i := range groups {
+		group := &groups[i]
+		if names[group.Label] > 1 {
+			group.Label = group.Folder
+		}
+		sort.SliceStable(group.Agents, func(i, j int) bool {
+			a, b := group.Agents[i], group.Agents[j]
+			aw, bw := a.Status, b.Status
+			if word := sections[a.Address]; word != "" {
+				aw = word
+			}
+			if word := sections[b.Address]; word != "" {
+				bw = word
+			}
+			if ar, br := herdr.StatusRank(aw), herdr.StatusRank(bw); ar != br {
+				return ar > br
+			}
+			return a.Seq > b.Seq
+		})
+	}
+	// Project headers stay put as statuses change; unavailable cwd goes last.
+	sort.Slice(groups, func(i, j int) bool {
+		a, b := groups[i], groups[j]
+		if (a.Folder == "") != (b.Folder == "") {
+			return a.Folder != ""
+		}
+		if an, bn := strings.ToLower(a.Label), strings.ToLower(b.Label); an != bn {
+			return an < bn
+		}
+		if a.Machine != b.Machine {
+			return a.Machine < b.Machine
+		}
+		return a.Folder < b.Folder
+	})
+	return groups
 }
 
 // subRow is a sub-agent under its parent's row, with the tree lines in front

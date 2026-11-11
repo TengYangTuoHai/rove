@@ -140,7 +140,14 @@ Worktrees indent under their checkout with `├─`/`└─`. Empty/unknown:
 "Loading…" h28.
 
 **Agents** (`agents`): border-top 1; header 41 (`pt14 pb5 px16`), "Agents"
-11.5 medium dim, sort icon 14 (Priority, Grouped by space). Priority
+11.5 medium dim, grouping icon 14 (Show by status, Show by project), plus a
+separate fold chevron. Rove keeps the grouping in `settings.json` as
+`agents_grouping` (`status`, the default, or `project`). Projects use the
+agent's foreground cwd, then terminal cwd, then space folder; a machine and
+full cleaned path identify one project across spaces. Equal directory names
+show full paths, remote groups name their machine, and unavailable cwd is
+"Unknown project". Projects sort by name; rows retain attention order and
+newest-turn order, with sub-agents staying under their parent. Status
 sections "Needs you" / "Done" / "Working" / "Idle": headers h30 `px8 pt8`
 11 medium colored by status with a count; rows h26 `px8 gap8 radius8` 2 px
 apart, the height and inset of a space's row: program icon 14,

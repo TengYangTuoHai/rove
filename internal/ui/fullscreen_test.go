@@ -65,6 +65,7 @@ func runFullscreenCore() {
 	channel := uint32(10)
 	endedTestStream := false
 	docVersion := 1
+	sidebarDocs := newSidebarDocumentCore()
 	for {
 		header := make([]byte, 9)
 		if _, err := io.ReadFull(in, header); err != nil {
@@ -87,6 +88,10 @@ func runFullscreenCore() {
 			}
 		}
 		_ = json.Unmarshal(payload, &req)
+		if sidebarDocs != nil {
+			sidebarDocs.respond(payload, send)
+			continue
+		}
 		if req.Method == "terminal.attach" && req.Params.Terminal == "tbroken" {
 			reply, _ := json.Marshal(map[string]any{"jsonrpc": "2.0", "id": req.ID, "error": map[string]any{"code": -32000, "message": "terminal unavailable"}})
 			send(0, reply)

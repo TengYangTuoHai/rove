@@ -50,6 +50,7 @@ type settingsFile struct {
 	SidebarOpen     bool            `json:"sidebar_open"`
 	SidebarWidth    float32         `json:"sidebar_width"`
 	AgentsCollapsed bool            `json:"agents_collapsed"`
+	AgentsGrouping  string          `json:"agents_grouping"`
 	FoldedMachines  map[string]bool `json:"folded_machines"`
 }
 
@@ -68,7 +69,8 @@ func (s settingsState) file() settingsFile {
 		UpdateChannel: s.UpdateChannel, AutoInstall: s.AutoInstall,
 		BackgroundCheck: s.BackgroundCheck, Telemetry: s.Telemetry,
 		SidebarOpen: s.SidebarOpen, SidebarWidth: s.SidebarWidth,
-		AgentsCollapsed: s.AgentsCollapsed, FoldedMachines: s.FoldedMachines,
+		AgentsCollapsed: s.AgentsCollapsed, AgentsGrouping: s.AgentsGrouping,
+		FoldedMachines: s.FoldedMachines,
 	}
 }
 
@@ -112,6 +114,7 @@ func readSettings(data []byte, s settingsState) settingsState {
 	take("sidebar_open", &s.SidebarOpen)
 	take("sidebar_width", &s.SidebarWidth)
 	take("agents_collapsed", &s.AgentsCollapsed)
+	take("agents_grouping", &s.AgentsGrouping)
 	take("folded_machines", &s.FoldedMachines)
 	return s.sanitized()
 }
@@ -175,6 +178,9 @@ func (s settingsState) sanitized() settingsState {
 	}
 	if s.FoldedMachines == nil {
 		s.FoldedMachines = map[string]bool{}
+	}
+	if s.AgentsGrouping != agentsByProject {
+		s.AgentsGrouping = agentsByStatus
 	}
 	return s
 }
