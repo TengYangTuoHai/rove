@@ -641,7 +641,7 @@ func (a *App) agentStatus(c *ui.Context, word string) {
 	}
 }
 
-// newSpace starts a space in the focused folder, on the shown machine.
+// newSpace starts a space in the home folder of the shown machine.
 func (a *App) newSpace() {
 	sp, _ := a.S.Active()
 	on := ""

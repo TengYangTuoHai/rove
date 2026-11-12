@@ -19,10 +19,12 @@ func (s *Session) runTerminal(argv []string, cwd string, labels map[string]strin
 	}
 	params := map[string]any{
 		"argv":   argv,
-		"cwd":    cwd,
 		"env":    splitEnv(),
 		"labels": labels,
 		"keep":   true,
+	}
+	if cwd != "" {
+		params["cwd"] = cwd
 	}
 	if on != "" {
 		params["on"] = on
@@ -52,14 +54,25 @@ func labelsFor(spaceID, tabID string) map[string]string {
 	return l
 }
 
+// newSpaceFolder chooses the local home when no usable local folder was
+// supplied. An empty remote folder lets the remote core use its own home.
+func newSpaceFolder(folder, machine string) string {
+	if machine != "" {
+		return folder
+	}
+	if folder != "" {
+		if st, err := os.Stat(folder); err == nil && st.IsDir() {
+			return folder
+		}
+	}
+	home, _ := os.UserHomeDir()
+	return home
+}
+
 // NewSpace makes a space with one tab and one terminal. machine is where its
 // terminals run ("" is this computer); ids carry that machine's prefix.
 func (s *Session) NewSpace(name, folder string, machine string, argv []string) (*Space, *Tab, error) {
-	if folder == "" && machine == "" {
-		if p := s.FocusedPane(); p.Cwd != "" {
-			folder = p.Cwd
-		}
-	}
+	folder = newSpaceFolder(folder, machine)
 	var tag *string
 	if machine != "" {
 		m := machine
@@ -68,11 +81,6 @@ func (s *Session) NewSpace(name, folder string, machine string, argv []string) (
 	spaceID := qualify(freshID("sp"), tag)
 	tabID := qualify(freshID("tb"), tag)
 	paneID := qualify(freshID("p"), tag)
-	if folder != "" {
-		if st, err := os.Stat(folder); err != nil || !st.IsDir() {
-			folder = ""
-		}
-	}
 	addr, err := s.runTerminal(argv, folder, labelsFor(spaceID, tabID), machine)
 	if err != nil {
 		return nil, nil, err
