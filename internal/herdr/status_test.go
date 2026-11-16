@@ -69,7 +69,7 @@ func sessionWithOnePane(record string) *Session {
 		homes:     map[string]string{},
 		tabs:      map[string]*tabView{"tb1": {focused: "p1"}},
 		query:     map[string]string{},
-		seen:      map[string]bool{},
+		seen:      map[string]int{},
 	}
 }
 
@@ -90,6 +90,30 @@ func TestAgentsListDoesNotRestoreSeenFromEarlierTurn(t *testing.T) {
 	s.mu.Unlock()
 	if len(list) != 1 || list[0].Status != "done" {
 		t.Fatalf("new turn status: %+v, want one done agent", list)
+	}
+}
+
+// Looking at one completion must not hide the next one: the local mark
+// belongs to the turn that was read, like the terminal label.
+func TestAgentsListShowsTheNextCompletionAfterAnEarlierOneWasSeen(t *testing.T) {
+	s := sessionWithOnePane(`{"address":"t10","state":"live","labels":{},"status":{"state":"done"},"turn":1}`)
+	s.seen = map[string]int{"t10": 1}
+	s.mu.Lock()
+	list := s.agentsLocked()
+	s.mu.Unlock()
+	if len(list) != 1 || list[0].Status != "idle" {
+		t.Fatalf("the read completion: %+v, want one idle agent", list)
+	}
+	// The agent runs another turn. The core reports the finished status first
+	// and bumps the turn right after, as its event stream does.
+	s.applyEvent("status", "t10", json.RawMessage(`{"status":{"state":"working"}}`))
+	s.applyEvent("status", "t10", json.RawMessage(`{"status":{"state":"done"}}`))
+	s.applyEvent("turn", "t10", json.RawMessage(`{"state":"done","turn":2}`))
+	s.mu.Lock()
+	list = s.agentsLocked()
+	s.mu.Unlock()
+	if len(list) != 1 || list[0].Status != "done" {
+		t.Fatalf("next completion: %+v, want one done agent", list)
 	}
 }
 
@@ -137,7 +161,7 @@ func TestAgentsListFocusesOneTabOfASpace(t *testing.T) {
 		tabs:      map[string]*tabView{"tb1": {focused: "p1"}, "tb2": {focused: "p2"}},
 		activeTab: map[string]string{"sp1": "tb1"},
 		query:     map[string]string{},
-		seen:      map[string]bool{},
+		seen:      map[string]int{},
 	}
 	s.mu.Lock()
 	list := s.agentsLocked()

@@ -47,7 +47,7 @@ func TestAgentAlertsFollowBackgroundTransitions(t *testing.T) {
 	}
 	// An acknowledged agent still alerts on a later completed turn, even
 	// though the sidebar presents seen completions as idle.
-	s.seen = map[string]bool{"t10": true}
+	s.seen = map[string]int{"t10": 0}
 	reportAgentState(s, "working")
 	reportAgentState(s, "done")
 	if got := s.TakeAgentAlerts(); len(got) != 1 || got[0].Status != "done" {

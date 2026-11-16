@@ -56,7 +56,7 @@ type Session struct {
 	alertStatuses  map[string]string
 	agentAlerts    []Agent
 	agentSeq       int
-	seen           map[string]bool
+	seen           map[string]int // terminal -> the turn the person read as done
 	subCh          uint32
 	loadErr        error
 	savedAt        time.Time
@@ -136,7 +136,7 @@ func Connect(bin string, onChange func()) (*Session, error) {
 		borrowed:      map[string]string{},
 		git:           map[string]gitInfo{},
 		gitBusy:       map[string]bool{},
-		seen:          map[string]bool{},
+		seen:          map[string]int{},
 	}
 	if err := s.reload(); err != nil {
 		return nil, err
@@ -754,8 +754,11 @@ func (s *Session) agentsLocked() []*Agent {
 				if term.Parent != nil {
 					a.Parent = term.Parent
 				}
+				// A read completion shows as idle. The mark names the turn
+				// it was read at, so a later turn still reads as done.
 				seenTurn := term.Labels["herdr.seen"] == fmt.Sprint(term.Turn)
-				if (s.seen[addr] || seenTurn) && a.Status == "done" {
+				readTurn, read := s.seen[addr]
+				if a.Status == "done" && (seenTurn || read && readTurn == term.Turn) {
 					a.Status = "idle"
 				}
 				out = append(out, a)
@@ -1390,19 +1393,25 @@ func (s *Session) FocusTerminal(addr string) bool {
 }
 
 // markSeenLocked notes that the person looked at a terminal's finished agent.
+// The turn is captured here: the event stream may bump it before the core
+// write runs, and that later turn has not been read yet.
 func (s *Session) markSeenLocked(addr string) {
-	if term := s.terminals[addr]; term != nil && term.Word() == "done" {
-		s.seen[addr] = true
-		if term.Labels == nil {
-			term.Labels = map[string]string{}
-		}
-		term.Labels["herdr.seen"] = fmt.Sprint(term.Turn)
-		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			_, _ = s.Core.Call(ctx, "terminal.label", map[string]any{"terminal": addr, "labels": map[string]string{"herdr.seen": fmt.Sprint(term.Turn)}})
-		}()
+	term := s.terminals[addr]
+	if term == nil || term.Word() != "done" {
+		return
 	}
+	turn := term.Turn
+	label := fmt.Sprint(turn)
+	s.seen[addr] = turn
+	if term.Labels == nil {
+		term.Labels = map[string]string{}
+	}
+	term.Labels["herdr.seen"] = label
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_, _ = s.Core.Call(ctx, "terminal.label", map[string]any{"terminal": addr, "labels": map[string]string{"herdr.seen": label}})
+	}()
 }
 
 // SelectTab shows a tab of its space.
