@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 )
 
 // A terminal record as the core sends it: `status` is an object, not a word.
@@ -114,6 +115,42 @@ func TestAgentsListShowsTheNextCompletionAfterAnEarlierOneWasSeen(t *testing.T) 
 	s.mu.Unlock()
 	if len(list) != 1 || list[0].Status != "done" {
 		t.Fatalf("next completion: %+v, want one done agent", list)
+	}
+}
+
+// Completions lead by when they finished, not by how many turns they ran.
+func TestAgentsOrderCompletionsByStatusTime(t *testing.T) {
+	s := sessionWithOnePane(`{"address":"t10","state":"live","labels":{},"status":{"state":"done"},"status_ms":100,"turn":12}`)
+	var recent Terminal
+	if err := json.Unmarshal([]byte(`{"address":"t11","state":"live","labels":{},"status":{"state":"done"},"status_ms":200,"turn":1}`), &recent); err != nil {
+		t.Fatal(err)
+	}
+	pane := &Node{ID: "p2", Type: "block", Content: &NodeContent{Terminal: "t11"}}
+	s.spaces[0].Tabs[0].Root.Children = append(s.spaces[0].Tabs[0].Root.Children, pane)
+	s.terminals["t11"] = &recent
+	s.order = append(s.order, "t11")
+	s.mu.Lock()
+	s.agents = s.agentsLocked()
+	s.mu.Unlock()
+	list := s.Agents()
+	if len(list) != 2 || list[0].Address != "t11" || list[1].Address != "t10" {
+		t.Fatalf("completion order: %+v, want t11 then t10", list)
+	}
+}
+
+// The status event has no timestamp, so the app stamps the word change itself;
+// a repeated report of the same word must not reorder the list.
+func TestStatusEventStampsWhenTheWordChanged(t *testing.T) {
+	s := sessionWithOnePane(reportedRecord)
+	before := time.Now().UnixMilli()
+	s.applyEvent("status", "t10", json.RawMessage(`{"status":{"state":"done"}}`))
+	at := s.terminals["t10"].StatusAt()
+	if at < before {
+		t.Fatalf("change time = %d, want at least %d", at, before)
+	}
+	s.applyEvent("status", "t10", json.RawMessage(`{"status":{"state":"done"}}`))
+	if got := s.terminals["t10"].StatusAt(); got != at {
+		t.Fatalf("repeat moved the change time: %d -> %d", at, got)
 	}
 }
 

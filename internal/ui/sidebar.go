@@ -366,7 +366,7 @@ func (a *App) agentGroups(c *ui.Context, list []*herdr.Agent, all []*herdr.Termi
 		if len(mine) == 0 {
 			continue
 		}
-		sort.SliceStable(mine, func(i, j int) bool { return mine[i].Seq > mine[j].Seq })
+		sort.SliceStable(mine, func(i, j int) bool { return newer(mine[i], mine[j]) })
 		head := ui.Row(c).Height(30).FillWidth().Padding(8, 8, 0, 8).Gap(6).AlignItems(ui.Center)
 		head.Children(func() {
 			ui.Text(c, a.tr(sec.label)).FontSize(a.fontSize(11)).FontWeight(500).TextColor(t.Status(sec.word))
@@ -464,7 +464,7 @@ func agentProjects(list []*herdr.Agent, all []*herdr.Terminal, places []*herdr.S
 			if ar, br := herdr.StatusRank(aw), herdr.StatusRank(bw); ar != br {
 				return ar > br
 			}
-			return a.Seq > b.Seq
+			return newer(a, b)
 		})
 	}
 	// Project headers stay put as statuses change; unavailable cwd goes last.
@@ -482,6 +482,15 @@ func agentProjects(list []*herdr.Agent, all []*herdr.Terminal, places []*herdr.S
 		return a.Folder < b.Folder
 	})
 	return groups
+}
+
+// newer orders agents by when their status last changed, newest first; a
+// turn count breaks ties when the core has no timestamp for them.
+func newer(a, b *herdr.Agent) bool {
+	if a.At != b.At {
+		return a.At > b.At
+	}
+	return a.Seq > b.Seq
 }
 
 // subRow is a sub-agent under its parent's row, with the tree lines in front
@@ -530,6 +539,8 @@ func subAgents(all []*herdr.Terminal, shown map[string]bool, parent string, lead
 		}
 		kids = append(kids, term)
 	}
+	// A worker's latest change leads, like the agent rows above.
+	sort.SliceStable(kids, func(i, j int) bool { return kids[i].StatusAt() > kids[j].StatusAt() })
 	var out []subRow
 	for i, term := range kids {
 		line, next := "├", "│"

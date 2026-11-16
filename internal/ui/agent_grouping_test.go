@@ -131,10 +131,11 @@ func TestAgentGroupingKeepsPrioritySubAgentsAndRows(t *testing.T) {
 	app := NewApp(&herdr.Session{}, ThemeByName("graphite"))
 	app.setLanguage("en")
 	list := []*herdr.Agent{
-		{Address: "idle", Title: "idle parent", Status: "idle", Seq: 100},
-		{Address: "work-old", Title: "older work", Status: "working", Seq: 1},
-		{Address: "work-new", Title: "newer work", Status: "working", Seq: 2},
-		{Address: "done", Title: "done parent", Status: "done"},
+		{Address: "idle", Title: "idle parent", Status: "idle", At: 100},
+		{Address: "work-old", Title: "older work", Status: "working", At: 1},
+		{Address: "work-new", Title: "newer work", Status: "working", At: 2},
+		{Address: "done-old", Title: "older done", Status: "done", At: 1},
+		{Address: "done-new", Title: "newer done", Status: "done", At: 2},
 		{Address: "blocked", Title: "blocked parent", Status: "blocked"},
 	}
 	original := append([]*herdr.Agent(nil), list...)
@@ -168,13 +169,13 @@ func TestAgentGroupingKeepsPrioritySubAgentsAndRows(t *testing.T) {
 			t.Errorf("status section %q missing", label)
 		}
 	}
-	checkOrder([]string{"idle parent", "worker needs approval", "blocked parent", "done parent", "newer work", "older work"})
+	checkOrder([]string{"idle parent", "worker needs approval", "blocked parent", "newer done", "older done", "newer work", "older work"})
 	app.settings.AgentsGrouping = agentsByProject
 	tt.Frame()
 	if !tt.HasText("rove") || tt.HasText("Working") || tt.HasText("Done") || tt.HasText("project") {
 		t.Fatalf("project headers/sub-agent attachment incorrect: %q", tt.Texts())
 	}
-	checkOrder([]string{"rove", "idle parent", "worker needs approval", "blocked parent", "done parent", "newer work", "older work"})
+	checkOrder([]string{"rove", "idle parent", "worker needs approval", "blocked parent", "newer done", "older done", "newer work", "older work"})
 	if !slices.Equal(list, original) {
 		t.Fatal("grouping mutated the source list")
 	}

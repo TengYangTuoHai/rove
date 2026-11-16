@@ -76,6 +76,7 @@ type Agent struct {
 	App       *string `json:"app"`
 	Title     string  `json:"title"`
 	Seq       int     `json:"seq"`
+	At        int64   `json:"at"` // when the status last changed, ms since the epoch
 	Pinned    bool    `json:"pinned"`
 	Focused   bool    `json:"focused"`
 	Parent    *string `json:"parent"`
@@ -579,10 +580,20 @@ func (s *Session) applyEvent(kind, address string, data json.RawMessage) bool {
 	case "status":
 		if f := fields["status"]; f != nil {
 			if string(f) == "null" {
+				if t.Status.Word() != "" {
+					at := time.Now().UnixMilli()
+					t.StatusMs = &at
+				}
 				t.Status = nil
 			} else {
 				var st Status
 				if json.Unmarshal(f, &st) == nil {
+					// The event carries no timestamp; note when the word
+					// changed so the list can order agents by it.
+					if t.Status.Word() != st.State {
+						at := time.Now().UnixMilli()
+						t.StatusMs = &at
+					}
 					t.Status = &st
 				}
 			}
@@ -744,6 +755,7 @@ func (s *Session) agentsLocked() []*Agent {
 					Status:    term.Word(),
 					Title:     term.AgentTitle(),
 					Seq:       term.Turn,
+					At:        term.StatusAt(),
 					Pinned:    term.Labels["herdr.pinned"] == "true",
 					Focused: shownSpace != nil && shownSpace.ID == sp.ID && shownTabID == t.ID &&
 						s.tabs[t.ID] != nil && s.tabs[t.ID].focused == b.ID,
@@ -1038,10 +1050,15 @@ func (s *Session) Agents() []*Agent {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	out := append([]*Agent(nil), s.agents...)
+	// Attention first, then the newest word change: a completion that just
+	// arrived leads older ones, whatever their turn count.
 	sort.SliceStable(out, func(i, j int) bool {
 		ri, rj := StatusRank(out[i].Status), StatusRank(out[j].Status)
 		if ri != rj {
 			return ri > rj
+		}
+		if out[i].At != out[j].At {
+			return out[i].At > out[j].At
 		}
 		return out[i].Seq > out[j].Seq
 	})

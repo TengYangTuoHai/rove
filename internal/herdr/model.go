@@ -225,6 +225,15 @@ func (t *Terminal) activeStatus() *Status {
 // Word returns the agent's reported word, "" when it reports none or exited.
 func (t *Terminal) Word() string { return t.activeStatus().Word() }
 
+// StatusAt is when the reported word last changed, ms since the epoch, 0 when
+// the program never said. It orders agents by when they started or finished.
+func (t *Terminal) StatusAt() int64 {
+	if t.StatusMs == nil {
+		return 0
+	}
+	return *t.StatusMs
+}
+
 // AgentTitle is the agent's reported session title, falling back to the
 // terminal title when the program does not report one.
 func (t *Terminal) AgentTitle() string {
