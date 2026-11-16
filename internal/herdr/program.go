@@ -53,6 +53,7 @@ var programTable = map[string]programEntry{
 	"prime-agent":  {"Prime", "prime-agent", nil, false},
 	"gemini":       {"Gemini", "gemini", nil, false},
 	"ollama":       {"Ollama", "ollama", nil, false},
+	"omp":          {"oh-my-pi", "omp", []string{"oh-my-pi"}, false},
 	// DeepSeek's own CLI (dsh) and its TUI run as dsh-tui.
 	"deepseek": {"DeepSeek", "deepseek", []string{"dsh-tui", "dsh", "deepseek"}, true},
 	"nvim":     {"Neovim", "nvim", nil, false},
@@ -84,7 +85,7 @@ var agentPrograms = map[string]bool{
 	"grok": true, "antigravity": true, "kimi": true, "kiro": true,
 	"hermes": true, "mastracode": true, "qoder": true, "muse": true,
 	"crush": true, "command-code": true, "prime-agent": true,
-	"gemini": true, "ollama": true, "deepseek": true,
+	"gemini": true, "ollama": true, "deepseek": true, "omp": true,
 }
 
 // AgentPrograms returns the known agent programs, ordered by display name.

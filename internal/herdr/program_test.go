@@ -38,6 +38,7 @@ func TestProgramAgentLogos(t *testing.T) {
 	cases := map[string]string{
 		"claude-code": "claude", "codex": "codex", "pi": "pi", "opencode": "opencode",
 		"grok": "grok", "hermes": "hermes", "gemini": "gemini", "kimi": "kimi",
+		"omp": "omp", "oh-my-pi": "omp",
 	}
 	for name, icon := range cases {
 		p := Program(&Terminal{Status: &Status{State: "idle", App: name}})
