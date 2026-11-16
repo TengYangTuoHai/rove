@@ -45,6 +45,10 @@ type App struct {
 	T   *Theme
 	Win *mygo.Window
 
+	// fillFrame remembers the frame made by Rove's Fill command, so the
+	// same command can restore it without confusing a later manual resize.
+	fillFrame *windowFillFrame
+
 	localizer           atomic.Pointer[i18n.Localizer]
 	systemLanguage      string
 	localizationStarted bool
@@ -100,8 +104,14 @@ type App struct {
 	logoBitmap    *ui.Bitmap // reused on the UI thread across frames
 
 	focusTerm *terminal.Terminal
-	overlay   string
-	err       error
+	// focusRetry is how many frames a shown terminal may keep asking for the
+	// keyboard after its view took the request but the focus did not stick,
+	// as when a remote terminal attaches while the space changes. It stops
+	// as soon as the view reports the focus.
+	focusRetry map[string]int
+	services   ui.Services // the frame's clipboard and invalidation services
+	overlay    string
+	err        error
 
 	// peek is the terminal the window looks at over the tab, and what has
 	// become of its attachment.
@@ -156,6 +166,7 @@ func NewApp(s *herdr.Session, theme *Theme) *App {
 		terminalStyle:  terminal.Font{Family: TerminalFont, Size: 14},
 		terminalPrefs:  terminalPreferences{clipboard: true, contrast: 1},
 		terms:          map[string]*paneTerm{},
+		focusRetry:     map[string]int{},
 		starting:       map[string]bool{},
 		startTokens:    map[string]uint64{},
 		failedTerms:    map[string]bool{},
@@ -191,6 +202,7 @@ func (a *App) View(c *ui.Context) {
 		})
 		return
 	}
+	a.services = c.Services()
 	c.SetZoom(a.Zoom)
 	w, h := c.Size()
 	a.W, a.H = w, h
@@ -353,6 +365,9 @@ func (a *App) brand(c *ui.Context) {
 	height, top, left, right := a.brandLayout(c)
 	row := ui.Row(c).Height(height).FillWidth().Background(t.Chrome).
 		Padding(top, right, 0, left).Gap(4).AlignItems(ui.Center).DragWindow()
+	if isMac() && row.WindowDoubleClicked() && a.Win != nil {
+		a.titleBarDoubleClicked()
+	}
 	row.Children(func() {
 		ui.Row(c).Grow(1).Gap(8).AlignItems(ui.Center).Children(func() {
 			a.logo(c, 20)
@@ -516,7 +531,11 @@ func (a *App) tabsBar(c *ui.Context) {
 	// Only reserve the part of the left controls that reaches this row.
 	left = max(left, bar.Left-start+10)
 	ui.Column(c).Height(max(float32(42), bar.Height+1)).FillWidth().Children(func() {
-		ui.Row(c).Grow(1).FillWidth().Background(t.Chrome).Padding(0, bar.Right+10, 0, left).Gap(3).AlignItems(ui.Center).DragWindow().Children(func() {
+		row := ui.Row(c).Grow(1).FillWidth().Background(t.Chrome).Padding(0, bar.Right+10, 0, left).Gap(3).AlignItems(ui.Center).DragWindow()
+		if isMac() && row.WindowDoubleClicked() && a.Win != nil {
+			a.titleBarDoubleClicked()
+		}
+		row.Children(func() {
 			if !a.SidebarOpen {
 				a.iconButton(c, "sidebar", 26, a.tr("Show sidebar"), a.toggleSidebar)
 			}
@@ -998,6 +1017,9 @@ func (a *App) paneHeader(c *ui.Context, p herdr.PaneInfo) {
 		b := row.Bounds()
 		pane := p
 		a.openMenuAt(b.X+x, b.Y+y, []MenuItem{
+			{Label: a.tr("Copy terminal text"), Icon: "clipboard", Do: func() {
+				a.copyTerminalText(a.terminalFor(pane))
+			}},
 			{Label: a.tr("Find in terminal"), Icon: "search", Do: func() {
 				a.S.FocusPane(pane.Pane)
 				a.openFindFor(pane.Pane+"|"+pane.Terminal, a.terminalFor(pane))
@@ -1056,7 +1078,16 @@ func (a *App) terminalView(c *ui.Context, p herdr.PaneInfo) {
 	key := p.Pane + "|" + p.Terminal
 	if p.Focused && !a.isOverlay() && !(a.find.key == key && a.find.focus) && a.focusTerm != term {
 		a.focusTerm = term
+		a.focusRetry[key] = 10
 		view.Focus()
+	} else if p.Focused && a.focusTerm == term && a.focusRetry[key] > 0 && !view.Focused() {
+		// A focus request made while a remote terminal was still attaching can
+		// land in a frame the window discards. Ask again for a short while,
+		// then leave the focus wherever the person put it.
+		a.focusRetry[key]--
+		view.Focus()
+	} else if a.focusRetry[key] > 0 && view.Focused() {
+		delete(a.focusRetry, key)
 	}
 	if view.Clicked() {
 		a.S.FocusPane(p.Pane)
@@ -1239,6 +1270,7 @@ func (a *App) collect() {
 		if !live[key] {
 			gone = append(gone, entry)
 			delete(a.terms, key)
+			delete(a.focusRetry, key)
 		} else if !visible[key] {
 			hidden = append(hidden, entry)
 		}

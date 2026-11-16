@@ -270,6 +270,7 @@
   "findNextMatch": "Find next match",
   "findPreviousMatch": "Find previous match",
   "copy": "Copy",
+  "copyTerminalText": "Copy terminal text",
   "paste": "Paste",
   "nextAgent": "Next agent",
   "previousAgent": "Previous agent",

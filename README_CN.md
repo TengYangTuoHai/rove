@@ -105,6 +105,8 @@ Rove 支持 Kitty 图片协议，新建终端会通过 `DSH_TUI_IMAGE_PROTOCOL=k
 | 搜索终端 | `Cmd+F` | `Ctrl+Shift+F` |
 | 设置 | `Cmd+,` | `Ctrl+,` |
 
+终端里的程序接管鼠标时（btop、tmux 等全屏 TUI），按住 `Shift` 拖拽可在本地选中文字；也可以右键面板标题选择“复制终端文本”，或在命令面板运行同一命令。本地和远端空间行为一致。
+
 ### 翻译
 
 翻译文件位于 `internal/i18n/locales`。修改后，重新生成 Go 访问代码并检查翻译：

@@ -105,6 +105,8 @@ Rove supports Kitty graphics and sets `DSH_TUI_IMAGE_PROTOCOL=kitty` in new term
 | Find in terminal | `Cmd+F` | `Ctrl+Shift+F` |
 | Settings | `Cmd+,` | `Ctrl+,` |
 
+When a terminal program takes the mouse (btop, tmux and other full-screen TUIs), hold `Shift` while dragging to select text locally. You can also right-click the pane header and choose Copy terminal text, or run the same command from the command palette. This works the same in local and remote spaces.
+
 ### Translations
 
 Message catalogs are in `internal/i18n/locales`. After changing them, regenerate the Go accessors and check the catalogs:

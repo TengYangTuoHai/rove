@@ -48,7 +48,7 @@ var paletteCommands = append([]paletteCommand{
 	{"Find in terminal", "Terminal", "terminal.find", "search output scrollback"},
 	{"Find next match", "Terminal", "terminal.find_next", "search output older"},
 	{"Find previous match", "Terminal", "terminal.find_previous", "search output newer"},
-	{"Copy", "Terminal", "terminal.copy", "clipboard"},
+	{"Copy terminal text", "Terminal", "terminal.copy_all", "clipboard select output"},
 	{"Paste", "Terminal", "terminal.paste", "clipboard"},
 	{"Next agent", "Agent", "agent.next", ""},
 	{"Previous agent", "Agent", "agent.prev", ""},

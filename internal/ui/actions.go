@@ -295,13 +295,17 @@ func (a *App) Run(action string) {
 		a.findStep(true)
 	case "terminal.open":
 		a.newTab()
+	case "terminal.copy_all":
+		a.copyTerminalText(a.focusedTerminal())
+	case "terminal.paste":
+		a.pasteTerminalText(a.focusedTerminal())
 	case "window.minimize":
 		if a.Win != nil {
 			a.Win.Minimize()
 		}
 	case "window.maximize":
 		if a.Win != nil {
-			a.Win.ToggleMaximize()
+			a.toggleWindowMaximize()
 		}
 	case "window.close":
 		if a.Win != nil {

@@ -163,6 +163,81 @@ func TestPaneSelectionCopiesToLocalClipboard(t *testing.T) {
 			if got := strings.TrimSpace(tt.Clipboard()); got != want {
 				t.Errorf("explicit copy = %q, want %q", got, want)
 			}
+			// The terminal's own menu must keep the same local selection.
+			tt.SetClipboard("previous clipboard")
+			tt.RightClickAt(100, 12)
+			if app.isOverlay() {
+				t.Errorf("right click opened app overlay %q over the terminal menu", app.overlay)
+			}
+			if err := tt.ChooseMenuItem("Copy"); err != nil {
+				t.Fatalf("terminal copy menu: %v (items: %v)", err, tt.Menu())
+			}
+			if got := strings.TrimSpace(tt.Clipboard()); got != want {
+				t.Errorf("context menu copy = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+// Windows ConPTY can enable Win32 input while a TUI takes the mouse. Its
+// mouse reports must still reach the program, and Shift must keep a local
+// selection available for copying, regardless of the remote input protocol.
+func TestWindowsMouseTrackingKeepsShiftSelectionCopy(t *testing.T) {
+	for _, mode := range []string{"1000", "1002", "1003"} {
+		t.Run(mode, func(t *testing.T) {
+			RegisterFonts()
+			app := NewApp(&herdr.Session{}, ThemeByName("graphite"))
+			conn := newPeekConn()
+			opts := app.currentTerminalOptions()
+			opts.Conn, opts.Theme = conn, terminalTheme(app.T)
+			term, err := terminal.New(opts)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer term.Close()
+			pane := herdr.PaneInfo{Pane: "windows-pane", Terminal: "pc/t1", Focused: true}
+			app.terms[pane.Pane+"|"+pane.Terminal] = &paneTerm{term: term}
+			tt := myui.NewTester(func(c *myui.Context) { app.terminalView(c, pane) }, 600, 200)
+			tt.Frame()
+			term.Feed([]byte("\x1b[?1049h\x1b[?" + mode + "h\x1b[?1006h\x1b[?9001hWindows copy 中文"))
+			tt.Frame()
+			tt.SetClipboard("previous clipboard")
+			tt.Press(8, 12)
+			tt.Move(150, 12)
+			tt.Release(150, 12)
+			if got := tt.Clipboard(); got != "previous clipboard" {
+				t.Fatalf("program mouse gesture copied %q", got)
+			}
+			conn.flushInput(t, term)
+			if got := conn.typed(); !strings.Contains(got, "\x1b[<0;") {
+				t.Fatalf("program did not receive its mouse press: %q", got)
+			}
+			before := conn.typed()
+			// Shift-double-click selects a word locally even while the
+			// program takes normal clicks and drag events.
+			tt.ClickAtWith(myui.Shift, 20, 12)
+			tt.ClickAtWith(myui.Shift, 20, 12)
+			if got := tt.Clipboard(); got != "Windows" {
+				t.Fatalf("Shift selection copied %q, want Windows", got)
+			}
+			mods := myui.Ctrl | myui.Shift
+			if runtime.GOOS == "darwin" {
+				mods = myui.Cmd
+			}
+			tt.SetClipboard("previous clipboard")
+			tt.Key(mods, myui.KeyC)
+			if got := tt.Clipboard(); got != "Windows" {
+				t.Fatalf("copy shortcut copied %q, want Windows", got)
+			}
+			tt.SetClipboard("previous clipboard")
+			tt.Command("copy")
+			if got := tt.Clipboard(); got != "Windows" {
+				t.Fatalf("copy command copied %q, want Windows", got)
+			}
+			conn.flushInput(t, term)
+			if got := conn.typed(); got != before {
+				t.Fatalf("local selection or copy sent program input: %q", strings.TrimPrefix(got, before))
+			}
 		})
 	}
 }

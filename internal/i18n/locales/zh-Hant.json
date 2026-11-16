@@ -208,6 +208,7 @@
   "findNextMatch": "查找下一個匹配項",
   "findPreviousMatch": "查找上一個匹配項",
   "copy": "複製",
+  "copyTerminalText": "複製終端文字",
   "paste": "粘貼",
   "nextAgent": "下一個代理",
   "previousAgent": "上一個代理",

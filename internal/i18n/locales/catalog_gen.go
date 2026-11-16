@@ -2171,6 +2171,16 @@ func (msgs Messages) Copy() string {
 	return Catalog.Format(msgs.locale, "copy", nil)
 }
 
+// CopyTerminalText says "Copy terminal text"
+// in the language the app shows.
+func CopyTerminalText() string { return In(i18n.Locale()).CopyTerminalText() }
+
+// CopyTerminalText says "Copy terminal text"
+// in the language of msgs.
+func (msgs Messages) CopyTerminalText() string {
+	return Catalog.Format(msgs.locale, "copyTerminalText", nil)
+}
+
 // Paste says "Paste"
 // in the language the app shows.
 func Paste() string { return In(i18n.Locale()).Paste() }
