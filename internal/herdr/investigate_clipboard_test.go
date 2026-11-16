@@ -1,3 +1,11 @@
+//go:build integration
+
+// This probe talks to a running core and a machine named gpu. Run it with:
+// go test -tags integration ./internal/herdr -run TestInvestigateRemoteClipboardStream
+//
+// It stays out of the default `go test ./...` because CI has neither the core
+// binary nor the remote machine.
+
 package herdr
 
 import (
