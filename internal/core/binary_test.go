@@ -132,3 +132,38 @@ func TestResolveHCMissing(t *testing.T) {
 		t.Fatalf("missing core has no installation instructions: %v", err)
 	}
 }
+
+func TestCoreEnvironmentDropsTheLaunchersColorPolicy(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	t.Setenv("CLICOLOR", "0")
+	t.Setenv("CLICOLOR_FORCE", "1")
+	t.Setenv("FORCE_COLOR", "3")
+	t.Setenv("NO_COLOR_LOG", "kept")
+	t.Setenv("ROVE_UNRELATED", "kept")
+	binary := filepath.Join(t.TempDir(), "hc")
+	if err := os.WriteFile(binary, []byte("core"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	env := hcEnvironment(binary)
+	has := func(key string) bool {
+		for _, entry := range env {
+			if k, _, _ := strings.Cut(entry, "="); k == key {
+				return true
+			}
+		}
+		return false
+	}
+	for _, key := range []string{"NO_COLOR", "CLICOLOR", "CLICOLOR_FORCE", "FORCE_COLOR"} {
+		if has(key) {
+			t.Errorf("core env keeps %s: a terminal the core opens inherits the launcher's color policy", key)
+		}
+	}
+	for _, key := range []string{"NO_COLOR_LOG", "ROVE_UNRELATED"} {
+		if !has(key) {
+			t.Errorf("core env lost %s", key)
+		}
+	}
+	if os.Getenv("NO_COLOR") != "1" {
+		t.Error("changed the app's environment")
+	}
+}

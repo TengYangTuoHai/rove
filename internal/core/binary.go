@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 // findHC prefers the core shipped with this app, independent of the working
@@ -58,8 +59,24 @@ func resolveHC(executable, home, localAppData, goos string, lookPath func(string
 	return "", fmt.Errorf("herdr-core (hc) is missing. Reinstall Rove with its bundled core, or install hc from https://github.com/herdrdev/herdr-core#install and restart Rove")
 }
 
+// paneEnvironment is the app's environment without the color policy of the
+// shell that started it: a core this app starts gives its own environment to
+// every terminal it opens, so a NO_COLOR from the launcher would leave all of
+// them without colors. A pane's shell still sets these for what it runs.
+func paneEnvironment(env []string) []string {
+	out := make([]string, 0, len(env))
+	for _, entry := range env {
+		switch key, _, _ := strings.Cut(entry, "="); key {
+		case "NO_COLOR", "CLICOLOR", "CLICOLOR_FORCE", "FORCE_COLOR":
+			continue
+		}
+		out = append(out, entry)
+	}
+	return out
+}
+
 func hcEnvironment(binary string) []string {
-	env := os.Environ()
+	env := paneEnvironment(os.Environ())
 	if !filepath.IsAbs(binary) {
 		return env
 	}
