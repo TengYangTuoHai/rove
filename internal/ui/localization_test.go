@@ -60,7 +60,7 @@ func TestLocalizationPreservesUserTitles(t *testing.T) {
 	a := NewApp(&herdr.Session{}, ThemeByName("graphite"))
 	a.setLanguage("ja")
 	agent := &herdr.Agent{Title: "Settings", Status: "blocked"}
-	tt := myui.NewTester(func(c *myui.Context) { myui.Column(c).Width(268).Children(func() { a.agentRow(c, agent) }) }, 300, 100)
+	tt := myui.NewTester(func(c *myui.Context) { myui.Column(c).Width(268).Children(func() { a.agentRow(c, agent, "") }) }, 300, 100)
 	tt.Frame()
 	if !tt.HasText("Settings") || tt.HasText("設定") {
 		t.Fatal("user-assigned agent title was translated")

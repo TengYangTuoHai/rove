@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -175,8 +176,8 @@ func TestSidebarRowsCutLongTextOneLineHigh(t *testing.T) {
 	}
 }
 
-// TestAgentRowsLineUpWithSpaceRows keeps an agent's row the height of a
-// space's, and its text starting where the space name does, so the two lists
+// TestAgentRowsLineUpWithSpaceRows keeps an agent's top line where a space's
+// row is, and its text starting where the space name does, so the two lists
 // share one surface and one hover.
 func TestAgentRowsLineUpWithSpaceRows(t *testing.T) {
 	RegisterFonts()
@@ -186,7 +187,7 @@ func TestAgentRowsLineUpWithSpaceRows(t *testing.T) {
 	tt := myui.NewTester(func(c *myui.Context) {
 		myui.Column(c).Width(268).PaddingX(8).Gap(2).Children(func() {
 			app.spaceRow(c, sp, []*herdr.Space{sp}, nil)
-			app.agentRow(c, ag)
+			app.agentRow(c, ag, "a-project")
 		})
 	}, 400, 200)
 	tt.Frame()
@@ -199,43 +200,52 @@ func TestAgentRowsLineUpWithSpaceRows(t *testing.T) {
 		t.Fatal("the agent row is not drawn")
 	}
 	if got := agent.Y - space.Y; got != 28 {
-		t.Errorf("the agent row starts %v below the space row, want 28: 26 px rows with the 2 px gap", got)
+		t.Errorf("the agent's top line starts %v below the space row, want 28: a space row and the 2 px gap", got)
 	}
 	if got := agent.X - space.X; got != 0 {
 		t.Errorf("the agent's name starts %v past the space's, want them in one column", got)
 	}
 }
 
-// TestAgentRowNamesItsRemoteMachine draws the agents list's rows: a row from
-// another machine names it after the row's name, and a row on this computer
-// names no machine.
-func TestAgentRowNamesItsRemoteMachine(t *testing.T) {
+// TestAgentRowNamesItsProjectAndMachine draws the agents list's second line:
+// the project on the left, under the name, and the machine at the right. An
+// agent on this computer says so in the same place.
+func TestAgentRowNamesItsProjectAndMachine(t *testing.T) {
 	RegisterFonts()
 	app := NewApp(&herdr.Session{}, ThemeByName("graphite"))
-	draw := func(ag *herdr.Agent) *myui.Tester {
+	draw := func(ag *herdr.Agent, project string) *myui.Tester {
 		tt := myui.NewTester(func(c *myui.Context) {
 			myui.Column(c).Width(268).PaddingX(8).Children(func() {
-				app.agentRow(c, ag)
+				app.agentRow(c, ag, project)
 			})
 		}, 400, 120)
 		tt.Frame()
 		return tt
 	}
 
-	remote := draw(&herdr.Agent{SpaceName: "build", Machine: "gpu", Status: "working"})
-	texts := remote.Texts()
-	if len(texts) != 2 || texts[0] != "build" || texts[1] != "gpu" {
-		t.Fatalf("a remote agent's row must name its machine after its name: %q", texts)
+	remote := draw(&herdr.Agent{SpaceName: "build", Machine: "gpu", Status: "working"}, "rove")
+	if texts := remote.Texts(); !slices.Equal(texts, []string{"build", "rove", "gpu"}) {
+		t.Fatalf("a remote agent's row = %q, want its name, project and machine", texts)
 	}
 	name, _ := remote.Find("build")
+	project, _ := remote.Find("rove")
 	machine, _ := remote.Find("gpu")
-	if machine.X < name.X {
-		t.Errorf("the machine chip starts at %v, before the name at %v", machine.X, name.X)
+	if project.Y <= name.Y {
+		t.Errorf("the project starts at %v, not under the name at %v", project.Y, name.Y)
+	}
+	if project.X != name.X {
+		t.Errorf("the project starts at %v, not in the name's column at %v", project.X, name.X)
+	}
+	if machine.X <= project.X {
+		t.Errorf("the machine starts at %v, not after the project at %v", machine.X, project.X)
+	}
+	if d := machine.Y + machine.H/2 - (project.Y + project.H/2); d > 1 || d < -1 {
+		t.Errorf("the machine's chip sits %v off the project's line, want them together", d)
 	}
 
-	local := draw(&herdr.Agent{SpaceName: "notes", Status: "working"})
-	if texts := local.Texts(); len(texts) != 1 || texts[0] != "notes" {
-		t.Fatalf("an agent on this computer names no machine: %q", texts)
+	local := draw(&herdr.Agent{SpaceName: "notes", Status: "working"}, "rove")
+	if texts := local.Texts(); !slices.Equal(texts, []string{"notes", "rove"}) {
+		t.Fatalf("an agent on this computer = %q, want its name and project only", texts)
 	}
 }
 
@@ -320,7 +330,7 @@ func TestSubAgentRowIsIndentedUnderItsParent(t *testing.T) {
 	sub.Term.Status = &herdr.Status{App: "pi", State: "working"}
 	tt := myui.NewTester(func(c *myui.Context) {
 		myui.Column(c).Width(268).PaddingX(8).Gap(2).Children(func() {
-			app.agentRow(c, ag)
+			app.agentRow(c, ag, "a-project")
 			app.subAgentRow(c, sub)
 		})
 	}, 400, 200)
@@ -334,8 +344,8 @@ func TestSubAgentRowIsIndentedUnderItsParent(t *testing.T) {
 	if !ok {
 		t.Fatal("the sub-agent's row is not drawn")
 	}
-	if name.Y-parent.Y != 28 {
-		t.Errorf("the sub-agent's row starts %v below its parent's, want 28: 26 px rows with the 2 px gap", name.Y-parent.Y)
+	if name.Y-parent.Y != 46 {
+		t.Errorf("the sub-agent's row starts %v below its parent's, want 46: 44 px parent rows with the 2 px gap", name.Y-parent.Y)
 	}
 	if name.X <= parent.X {
 		t.Errorf("the sub-agent's name starts at %v, not indented past the parent's at %v", name.X, parent.X)
@@ -359,28 +369,33 @@ func TestPeekSelectsItsSubAgentRow(t *testing.T) {
 			}
 			tt := myui.NewTester(func(c *myui.Context) {
 				myui.Column(c).Width(268).PaddingX(8).Gap(2).Background(app.T.Chrome).Children(func() {
-					app.agentRow(c, parent)
+					app.agentRow(c, parent, "parent-project")
 					for _, sub := range rows {
 						app.subAgentRow(c, sub)
 					}
 				})
 			}, 400, 200)
 			tt.Frame()
-			pixel := func(y int) [4]uint32 {
-				r, g, b, a := tt.Image().At(12, y).RGBA()
+			pixel := func(name string) [4]uint32 {
+				t.Helper()
+				bounds, ok := tt.Find(name)
+				if !ok {
+					t.Fatalf("row %q is not drawn", name)
+				}
+				r, g, b, a := tt.Image().At(12, int(bounds.Y+bounds.H/2)).RGBA()
 				return [4]uint32{r, g, b, a}
 			}
-			selected, plain := pixel(13), pixel(41)
+			selected, plain := pixel("parent"), pixel("first worker")
 			if selected == plain {
 				t.Fatal("the focused parent has no distinct selection background")
 			}
 			check := func(wantFirst, wantRemote [4]uint32) {
 				t.Helper()
 				tt.Frame()
-				if got := pixel(41); got != wantFirst {
+				if got := pixel("first worker"); got != wantFirst {
 					t.Errorf("first worker background = %v, want %v", got, wantFirst)
 				}
-				if got := pixel(69); got != wantRemote {
+				if got := pixel("remote worker"); got != wantRemote {
 					t.Errorf("remote worker background = %v, want %v", got, wantRemote)
 				}
 			}
@@ -413,7 +428,7 @@ func TestSubAgentRowPeeksAtItsWorker(t *testing.T) {
 	sub := subRow{Term: worker("t2", "t1", "w-core-agents-visible"), Lines: []string{"\u2514"}}
 	tt := myui.NewTester(func(c *myui.Context) {
 		myui.Column(c).Width(268).PaddingX(8).Gap(2).Children(func() {
-			app.agentRow(c, ag)
+			app.agentRow(c, ag, "a-project")
 			app.subAgentRow(c, sub)
 		})
 	}, 400, 200)

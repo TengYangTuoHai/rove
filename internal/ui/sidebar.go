@@ -348,7 +348,7 @@ func (a *App) agentGroups(c *ui.Context, list []*herdr.Agent, all []*herdr.Termi
 				}
 			})
 			for _, ag := range group.Agents {
-				a.agentRow(c, ag)
+				a.agentRow(c, ag, "")
 				for _, sub := range subs[ag.Address] {
 					a.subAgentRow(c, sub)
 				}
@@ -356,6 +356,10 @@ func (a *App) agentGroups(c *ui.Context, list []*herdr.Agent, all []*herdr.Termi
 		}
 		return
 	}
+	// Status grouping gives each row a second line: the project it works in
+	// and the machine it runs on. Project grouping already says both in its
+	// headers.
+	projects := agentProjectLabels(list, all, places)
 	for _, sec := range agentSections {
 		var mine []*herdr.Agent
 		for _, ag := range list {
@@ -374,7 +378,7 @@ func (a *App) agentGroups(c *ui.Context, list []*herdr.Agent, all []*herdr.Termi
 			ui.Spacer(c)
 		})
 		for _, ag := range mine {
-			a.agentRow(c, ag)
+			a.agentRow(c, ag, projects[ag.Address])
 			for _, sub := range subs[ag.Address] {
 				a.subAgentRow(c, sub)
 			}
@@ -393,6 +397,23 @@ type agentProjectGroup struct {
 	agentProject
 	Label  string
 	Agents []*herdr.Agent
+}
+
+// agentProjectLabels names each agent's project by agent address, as the base
+// name of the folder it works in: a status row stays short and never repeats a
+// path. Project grouping still shows full paths where base names collide.
+func agentProjectLabels(list []*herdr.Agent, all []*herdr.Terminal, places []*herdr.Space) map[string]string {
+	labels := make(map[string]string, len(list))
+	for _, group := range agentProjects(list, all, places, nil) {
+		label := ""
+		if group.Folder != "" {
+			label = path.Base(group.Folder)
+		}
+		for _, ag := range group.Agents {
+			labels[ag.Address] = label
+		}
+	}
+	return labels
 }
 
 // agentProjects resolves the same cwd as a pane (foreground, terminal, space),
@@ -586,11 +607,19 @@ func (a *App) subAgentRow(c *ui.Context, sub subRow) {
 	}
 }
 
-// agentRow is one agent: the same 26 px row, radius 8 and 2 px gap as the
-// spaces above it, so the two lists share one hover surface.
-func (a *App) agentRow(c *ui.Context, ag *herdr.Agent) {
+// agentRow is one agent. Under status grouping it is two lines high: the
+// name and status as before, then the project it works in on the left and the
+// machine it runs on at the right. Project grouping keeps the 26 px row, since
+// its header already names both.
+func (a *App) agentRow(c *ui.Context, ag *herdr.Agent, project string) {
 	t := a.T
-	row := ui.Row(c).Height(26).FillWidth().PaddingX(8).Gap(8).Radius(8).AlignItems(ui.Center)
+	twoLines := a.settings.AgentsGrouping != agentsByProject
+	row := ui.Column(c).FillWidth().Radius(8)
+	if twoLines {
+		row.Height(44).Padding(2, 8, 2, 8)
+	} else {
+		row.Height(26).PaddingX(8)
+	}
 	if ag.Focused {
 		row.Background(t.Selected)
 	} else if row.Hovered() {
@@ -598,24 +627,48 @@ func (a *App) agentRow(c *ui.Context, ag *herdr.Agent) {
 	}
 	row.Cursor(ui.CursorPointer)
 	row.Children(func() {
-		a.programIcon(c, ag.Program, 14, t.Foreground)
-		name := ag.Title
-		if name == "" {
-			name = ag.SpaceName
-			if !strings.HasPrefix(ag.TabName, ag.SpaceName) && ag.TabName != "" && ag.TabName != "1" {
-				name += " · " + ag.TabName
+		top := ui.Row(c).FillWidth().Gap(8).AlignItems(ui.Center)
+		if twoLines {
+			top.Height(22)
+		} else {
+			top.Height(26)
+		}
+		top.Children(func() {
+			a.programIcon(c, ag.Program, 14, t.Foreground)
+			name := ag.Title
+			if name == "" {
+				name = ag.SpaceName
+				if !strings.HasPrefix(ag.TabName, ag.SpaceName) && ag.TabName != "" && ag.TabName != "1" {
+					name += " · " + ag.TabName
+				}
 			}
+			color := t.Foreground
+			if ag.Status == "idle" && !ag.Focused {
+				color = t.Muted
+			}
+			ui.Text(c, name).FontSize(a.fontSize(12.5)).TextColor(color).Grow(1).MinWidth(0).SingleLine()
+			// A project header already identifies the machine for all its agents.
+			if !twoLines && ag.Machine != "" {
+				a.machineChip(c, ag.Machine)
+			}
+			a.agentStatus(c, ag.Status)
+		})
+		if !twoLines {
+			return
 		}
-		color := t.Foreground
-		if ag.Status == "idle" && !ag.Focused {
-			color = t.Muted
-		}
-		ui.Text(c, name).FontSize(a.fontSize(12.5)).TextColor(color).Grow(1).MinWidth(0).SingleLine()
-		// Project headers already identify the machine for all their agents.
-		if ag.Machine != "" && a.settings.AgentsGrouping != agentsByProject {
-			a.machineChip(c, ag.Machine)
-		}
-		a.agentStatus(c, ag.Status)
+		bottom := ui.Row(c).Height(18).FillWidth().PaddingStart(22).Gap(8).AlignItems(ui.Center)
+		bottom.Children(func() {
+			label := project
+			if label == "" {
+				label = a.tr("Unknown project")
+			}
+			ui.Text(c, label).FontSize(a.fontSize(10.5)).TextColor(t.Muted).Grow(1).MinWidth(0).SingleLine()
+			// The same chip the project headers use, so a remote agent reads
+			// like a remote project.
+			if ag.Machine != "" {
+				a.machineChip(c, ag.Machine)
+			}
+		})
 	})
 	if row.Clicked() {
 		a.S.FocusPane(ag.Pane)

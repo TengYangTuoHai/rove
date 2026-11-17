@@ -169,6 +169,12 @@ func TestAgentGroupingKeepsPrioritySubAgentsAndRows(t *testing.T) {
 			t.Errorf("status section %q missing", label)
 		}
 	}
+	if !tt.HasText("rove") {
+		t.Fatalf("status rows do not name their project: %q", tt.Texts())
+	}
+	if _, ok := tt.Find("/work/rove"); ok {
+		t.Fatalf("a status row shows a project path: %q", tt.Texts())
+	}
 	checkOrder([]string{"idle parent", "worker needs approval", "blocked parent", "newer done", "older done", "newer work", "older work"})
 	app.settings.AgentsGrouping = agentsByProject
 	tt.Frame()

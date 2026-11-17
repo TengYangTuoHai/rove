@@ -149,13 +149,16 @@ show full paths, remote groups name their machine, and unavailable cwd is
 "Unknown project". Projects sort by name; rows retain attention order and
 newest-turn order, with sub-agents staying under their parent. Status
 sections "Needs you" / "Done" / "Working" / "Idle": headers h30 `px8 pt8`
-11 medium colored by status with a count; rows h26 `px8 gap8 radius8` 2 px
-apart, the height and inset of a space's row: program icon 14,
-"space · detail" 12.5 (idle muted), machine chip when the agent is on
-another machine (h17 `px4 gap3 radius4 border1`, server 9, name 10 muted
-cut to one line; this computer's agents have none), status at right:
+11 medium colored by status with a count; status rows are two lines h44
+`px8 radius8` 2 px apart. The top line h22 keeps a space row's inset:
+program icon 14, "space · detail" 12.5 (idle muted), status at right:
 spinner 12 working, `Needs you` pill (h18 px6 radius5, blocked at 15 %
-alpha), 7 px ring idle, 7 px dot done. Empty text 12 dim:
+alpha), 7 px ring idle, 7 px dot done. The bottom line h18 starts under the
+name: the project 10.5 muted at the left (the base name of the same cwd
+project grouping resolves, never a path) and, on another machine, the
+machine chip at the right (h17 `px4 gap3 radius4 border1`, server 9, name
+10 muted cut to one line). Project grouping keeps the h26 row, its header
+carrying the same chip. Empty text 12 dim:
 "No agent status yet. Agents show up here when they report their status.
 Older versions and agents inside tmux may not."
 

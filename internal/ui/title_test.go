@@ -22,7 +22,7 @@ func TestAgentNamesFollowTitles(t *testing.T) {
 	sub.Term.Status = &herdr.Status{App: "pi", State: "working"}
 	tt := myui.NewTester(func(c *myui.Context) {
 		myui.Column(c).Width(268).Padding(12).Gap(2).Background(app.T.Chrome).Children(func() {
-			app.agentRow(c, ag)
+			app.agentRow(c, ag, "")
 			app.subAgentRow(c, sub)
 		})
 	}, 300, 100)
