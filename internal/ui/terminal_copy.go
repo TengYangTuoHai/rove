@@ -20,13 +20,34 @@ func (a *App) copyTerminalText(term *terminal.Terminal) {
 	a.services.WriteClipboard(text)
 }
 
+// pasteEventsOff clears the Kitty paste-events mode (OSC 5522) in the view:
+// what the program reads back after a paste event is not this view's to
+// answer. A pane shows a terminal that herdr-core keeps: the program's
+// output goes through the core's own screen too, and that screen has no
+// clipboard, so it refuses every clipboard read with EPERM. A program that
+// asks for the paste itself (omp's enhanced paste) is offered an event,
+// reads it back, gets the core's EPERM and drops the paste. With the mode
+// off the program gets the paste as text, bracketed when it asked (mode
+// 2004), which needs no read.
+const pasteEventsOff = "\x1b[?5522l"
+
+// pasteTextInto pastes text, as an ordinary paste: the program reads it as
+// input instead of reading the clipboard itself (see pasteEventsOff).
+func pasteTextInto(term *terminal.Terminal, text string) {
+	if term == nil || text == "" {
+		return
+	}
+	term.Feed([]byte(pasteEventsOff))
+	term.Paste(text)
+}
+
 // pasteTerminalText pastes the local clipboard into the terminal.
 func (a *App) pasteTerminalText(term *terminal.Terminal) {
 	if term == nil {
 		return
 	}
 	if text := a.services.ReadClipboard(); text != "" {
-		term.Paste(text)
+		pasteTextInto(term, text)
 	}
 }
 

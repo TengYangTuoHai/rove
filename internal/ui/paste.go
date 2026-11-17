@@ -90,7 +90,10 @@ func (a *App) pasteImage(term *terminal.Terminal, addr string, d transfer.Data) 
 			a.toast(a.tr("Cannot paste the image"), err.Error(), "error")
 			return
 		}
-		term.Paste(put.Path)
+		// The program gets the path as text, bracketed when it asked:
+		// a paste event would be read back from the core, which refuses
+		// clipboard reads (pasteTextInto).
+		pasteTextInto(term, put.Path)
 	}()
 	return true
 }
