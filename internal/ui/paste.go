@@ -62,6 +62,19 @@ func imageName(f transfer.Format) string {
 	return "pasted-image." + b.String()
 }
 
+// pasteProgramText pastes the text of a clipboard paste as input, for a
+// program here or on another machine: the program must not read the
+// clipboard itself, since herdr-core refuses every such read (see
+// pasteEventsOff). It reports whether the paste held text.
+func pasteProgramText(term *terminal.Terminal, d transfer.Data) bool {
+	text, err := d.Read(transfer.Text)
+	if err != nil || len(text) == 0 {
+		return false
+	}
+	pasteTextInto(term, string(text))
+	return true
+}
+
 // pasteImage takes a paste that holds an image for a terminal on another
 // machine: a program there cannot read this computer's clipboard, so the
 // image is written beside the terminal on that machine (terminal.put) and its

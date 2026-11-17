@@ -1,9 +1,11 @@
 package ui
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/egoist/mygo/plugins/terminal"
+	"github.com/egoist/mygo/transfer"
 	myui "github.com/egoist/mygo/ui"
 
 	"rove/internal/herdr"
@@ -96,5 +98,49 @@ func TestPasteTerminalTextSkipsPasteEvents(t *testing.T) {
 	conn.mu.Unlock()
 	if want := "\x1b[200~omp\x1b[201~"; got != want {
 		t.Fatalf("pasted %q, want %q", got, want)
+	}
+}
+
+// The paste key goes to the terminal's own bindings, so the app's offer to
+// paste is made where the program is: text, never a paste event, which the
+// core would answer with EPERM.
+func TestPasteKeyHandsTextInsteadOfAPasteEvent(t *testing.T) {
+	RegisterFonts()
+	conn := newPeekConn()
+	var term *terminal.Terminal
+	opts := terminal.Options{Conn: conn}
+	opts.OnPaste = func(d transfer.Data) bool { return pasteProgramText(term, d) }
+	term, err := terminal.New(opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer term.Close()
+	term.Feed([]byte("\x1b[?5522h\x1b[?2004h"))
+
+	tt := myui.NewTester(func(c *myui.Context) {
+		terminal.View(c, term).Fill().Focus()
+	}, 600, 200)
+	tt.Frame()
+	tt.SetClipboard("omp")
+	mods := myui.Cmd
+	if runtime.GOOS != "darwin" {
+		mods = myui.Ctrl | myui.Shift
+	}
+	tt.Key(mods, myui.KeyV)
+	conn.flushInput(t, term)
+
+	conn.mu.Lock()
+	got := string(conn.written)
+	conn.mu.Unlock()
+	if want := "\x1b[200~omp\x1b[201~"; got != want {
+		t.Fatalf("pasted %q, want %q", got, want)
+	}
+}
+
+// A paste with no text leaves the terminal to it, as before.
+func TestPasteProgramTextNeedsText(t *testing.T) {
+	image := transfer.New(transfer.NewItem(transfer.Bytes(transfer.PNG, []byte("PNG"))))
+	if pasteProgramText(nil, image) {
+		t.Error("a paste with no text was taken")
 	}
 }

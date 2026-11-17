@@ -1156,10 +1156,15 @@ func (a *App) startTerminal(key string, p herdr.PaneInfo, token uint64) {
 	opts.Padding, opts.PaddingColor = terminal.Padding{X: 14, Y: 12}, terminal.PaddingExtend
 	// A paste that holds an image is taken for a pane on another
 	// machine, whose program cannot read this computer's clipboard
-	// (pasteImage). term is set by New, before any frame can draw
-	// the terminal that a paste comes from.
+	// (pasteImage). Any other paste a program here gets as text
+	// (pasteProgramText): its clipboard read would be refused by the
+	// core. term is set by New, before any frame can draw the terminal
+	// that a paste comes from.
 	opts.OnPaste = func(d transfer.Data) bool {
-		return a.pasteImage(term, p.Terminal, d)
+		if a.pasteImage(term, p.Terminal, d) {
+			return true
+		}
+		return pasteProgramText(term, d)
 	}
 	term, err := terminal.New(opts)
 	if err != nil {
