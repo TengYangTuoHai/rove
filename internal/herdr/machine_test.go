@@ -27,6 +27,7 @@ func TestMachinesFollowDraggedOrder(t *testing.T) {
 func TestMoveMachine(t *testing.T) {
 	t.Setenv("ROVE_HOME", t.TempDir())
 	s := &Session{machines: []*Machine{{Name: "alpha"}, {Name: "beta"}, {Name: "gamma"}}}
+	s.LoadView()
 	s.MoveMachine("gamma", 1)
 	if got := machineNames(s); got != "gamma,alpha,beta" {
 		t.Fatalf("moved to the top: %q", got)

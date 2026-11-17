@@ -60,6 +60,10 @@ type Session struct {
 	subCh          uint32
 	loadErr        error
 	savedAt        time.Time
+	// viewLoaded says LoadView has read view.json. Saves before that would
+	// write a screen with no dragged order over the one on disk: a machine's
+	// home arriving during startup used to clear both orders this way.
+	viewLoaded bool
 }
 
 // Agent is one terminal whose program reports what it is doing.

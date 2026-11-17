@@ -46,16 +46,15 @@ type viewTab struct {
 
 // LoadView restores this screen's selection, focus, zoom and dragged order.
 func (s *Session) LoadView() {
-	text, err := os.ReadFile(filepath.Join(AppHome(), "view.json"))
-	if err != nil {
-		return
-	}
 	var v viewFile
-	if json.Unmarshal(text, &v) != nil {
-		return
+	if text, err := os.ReadFile(filepath.Join(AppHome(), "view.json")); err == nil {
+		_ = json.Unmarshal(text, &v)
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// The screen may save from now on: its order is what was on disk, not
+	// the empty state startup began with.
+	s.viewLoaded = true
 	s.machineOrder = v.Machines
 	s.spaceOrder = v.SpaceOrder
 	s.restoreSpaceOrderLocked()
@@ -147,6 +146,12 @@ func (s *Session) SaveView() {
 	saveViewMu.Lock()
 	defer saveViewMu.Unlock()
 	s.mu.Lock()
+	if !s.viewLoaded {
+		// Startup has not read the dragged orders yet; writing now would
+		// erase them for the next launch.
+		s.mu.Unlock()
+		return
+	}
 	v := viewFile{Active: s.active, Spaces: map[string]string{}, Tabs: map[string]viewTab{},
 		Machines: append([]string(nil), s.machineOrder...), SpaceOrder: append([]string(nil), s.spaceOrder...)}
 	for id, tab := range s.activeTab {

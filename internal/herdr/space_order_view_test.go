@@ -54,7 +54,10 @@ func TestMoveSpaceSavesViewOrderImmediately(t *testing.T) {
 	// not postpone the explicit drag's write.
 	t.Setenv("ROVE_HOME", filepath.Join(t.TempDir(), "new", "rove"))
 	s := &Session{spaces: []*Space{{ID: "a"}, {ID: "b"}, {ID: "c"}}, active: "b",
-		activeTab: map[string]string{"b": "selected-tab"}, machineOrder: []string{"remote"}, savedAt: time.Now()}
+		activeTab: map[string]string{"b": "selected-tab"}}
+	s.LoadView()
+	s.machineOrder = []string{"remote"}
+	s.savedAt = time.Now()
 	s.MoveSpace("c", 1)
 	v := readSpaceOrderView(t)
 	if !slices.Equal(v.SpaceOrder, []string{"c", "a", "b"}) {
@@ -94,7 +97,9 @@ func TestSpaceOrderSurvivesDocumentRefresh(t *testing.T) {
 func TestSpaceOrderRestoresDelayedRemoteDocuments(t *testing.T) {
 	t.Setenv("ROVE_HOME", t.TempDir())
 	remoteOrder := []string{"remote/c", "remote/b", "remote/a", "offline/y", "offline/x"}
-	previous := &Session{spaceOrder: remoteOrder}
+	previous := &Session{}
+	previous.LoadView()
+	previous.spaceOrder = remoteOrder
 	previous.SaveView()
 	s := &Session{}
 	applySpaceOrderDocument(t, s, "", 1, "local-a", "local-b")
@@ -123,11 +128,46 @@ func TestSpaceOrderRestoresDelayedRemoteDocuments(t *testing.T) {
 
 func TestSpaceOrderWithoutSavedDragUsesDocumentOrder(t *testing.T) {
 	t.Setenv("ROVE_HOME", t.TempDir())
-	s := &Session{}
+	s := &Session{viewLoaded: true}
 	s.SaveView()
 	applySpaceOrderDocument(t, s, "", 1, "c", "a", "b")
 	s.LoadView()
 	checkSpaceOrder(t, s, "c", "a", "b")
 	applySpaceOrderDocument(t, s, "", 2, "b", "c", "a")
 	checkSpaceOrder(t, s, "b", "c", "a")
+}
+
+// A machine's home read can land before the window restores view.json. The
+// save it triggers must not write the empty startup screen over the dragged
+// orders, or the launch after the drag forgets them.
+func TestStartupSaveBeforeLoadViewKeepsDraggedOrder(t *testing.T) {
+	t.Setenv("ROVE_HOME", t.TempDir())
+	if err := os.MkdirAll(AppHome(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	saved := viewFile{Active: "b", Spaces: map[string]string{}, Tabs: map[string]viewTab{},
+		Machines: []string{"gamma", "alpha"}, SpaceOrder: []string{"c", "a", "b"}}
+	text, err := json.MarshalIndent(saved, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(AppHome(), "view.json"), text, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s := &Session{
+		machines: []*Machine{{Name: "alpha"}, {Name: "beta"}, {Name: "gamma"}},
+		savedAt:  time.Now().Add(-time.Minute),
+	}
+	s.changed() // a machine's home arrived before the view did
+	v := readSpaceOrderView(t)
+	if !slices.Equal(v.Machines, saved.Machines) || !slices.Equal(v.SpaceOrder, saved.SpaceOrder) {
+		t.Fatalf("startup save erased view.json: machines=%v space_order=%v", v.Machines, v.SpaceOrder)
+	}
+	s.LoadView()
+	if got := machineNames(s); got != "gamma,alpha,beta" {
+		t.Fatalf("machines after load = %q", got)
+	}
+	if !slices.Equal(s.spaceOrder, saved.SpaceOrder) {
+		t.Fatalf("space order after load = %v", s.spaceOrder)
+	}
 }
