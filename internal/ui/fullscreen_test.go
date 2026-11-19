@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"image"
 	"image/png"
 	"io"
 	"net"
@@ -257,9 +258,18 @@ func TestSwitchSplitToFullRetainsMeasuredTerminal(t *testing.T) {
 			}
 			tt.Frame()
 			img := tt.Image()
-			r, g, b, _ := img.At(int(950*tc.scale), int(550*tc.scale)).RGBA()
-			if r>>8 != 45 || g>>8 != 70 || b>>8 != 90 {
-				t.Fatal("terminal's first screen does not fill the lower right")
+			sample := image.Rect(int(940*tc.scale), int(540*tc.scale), int(960*tc.scale), int(560*tc.scale))
+			backgroundPixels := 0
+			for pixelY := sample.Min.Y; pixelY < sample.Max.Y; pixelY++ {
+				for pixelX := sample.Min.X; pixelX < sample.Max.X; pixelX++ {
+					pixel := img.RGBAAt(pixelX, pixelY)
+					if pixel.R == 45 && pixel.G == 70 && pixel.B == 90 {
+						backgroundPixels++
+					}
+				}
+			}
+			if total := sample.Dx() * sample.Dy(); backgroundPixels*2 <= total {
+				t.Fatalf("terminal's first screen does not fill the lower right: %d/%d background pixels", backgroundPixels, total)
 			}
 			if dir := os.Getenv("FULLSCREEN_SHOT_DIR"); dir != "" {
 				writeFullscreenShot(t, tt, filepath.Join(dir, tc.name+".png"))

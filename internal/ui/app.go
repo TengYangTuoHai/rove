@@ -976,65 +976,116 @@ func (a *App) paneCard(c *ui.Context, p herdr.PaneInfo, radius, pad float32) {
 // paneHeader is the pane's bar: program, folder, status, buttons.
 func (a *App) paneHeader(c *ui.Context, p herdr.PaneInfo) {
 	t := a.T
-	row := ui.Row(c).Height(30).FillWidth().Background(t.Background).PaddingX(10).Gap(8).AlignItems(ui.Center)
+	titleHeight := max(18, a.fontSize(17))
+	detailHeight := max(20, a.fontSize(15))
+	row := ui.Row(c).Height(titleHeight+detailHeight+4).Shrink(0).
+		FillWidth().Background(t.Background).Padding(2, 8, 2, 8).
+		Gap(8).AlignItems(ui.Center).Clip().Cursor(ui.CursorPointer)
 	hovered := row.Hovered()
+	name := p.Title
+	if name == "" {
+		name = "shell"
+	}
 	row.Children(func() {
 		if p.Terminal != "" {
-			a.programIcon(c, p.Program, 14, t.Dim)
-		}
-		name := p.Title
-		if name == "" {
-			name = "shell"
-		}
-		ui.Text(c, name).FontSize(a.fontSize(12)).FontWeight(500).TextColor(t.Foreground).MaxWidth(260).Ellipsis("…")
-		ui.Text(c, herdr.ShortFolder(p.Cwd)).FontSize(a.fontSize(12)).TextColor(t.Dim).Grow(1).Ellipsis("…")
-		switch p.Status {
-		case "working":
-			a.spinner(c, 12, t.Working)
-		case "blocked":
-			ui.Box(c).Height(18).PaddingX(6).Radius(5).Background(Alpha(t.Blocked, 0.15)).Center().Children(func() {
-				ui.Text(c, a.tr("Needs you")).FontSize(a.fontSize(10.5)).FontWeight(600).TextColor(t.Blocked)
+			ui.Box(c).Size(26, 26).Shrink(0).Radius(7).Background(t.Raised).Center().Children(func() {
+				a.programIcon(c, p.Program, 14, t.Muted)
 			})
-		case "done":
-			ui.Box(c).Size(7, 7).Radius(4).Background(t.Done)
 		}
-		if hovered {
-			a.paneButton(c, "split-right", func() { a.split("right") })
-			a.paneButton(c, "split-down", func() { a.split("down") })
-			if p.Zoomed {
-				a.paneButton(c, "unzoom", func() { a.S.ZoomPane(p.Pane) })
-			} else {
-				a.paneButton(c, "zoom", func() { a.S.ZoomPane(p.Pane) })
-			}
-			a.paneButton(c, "close", func() { a.requestClose("pane.close", p.Pane) })
-		}
+		ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+			ui.Row(c).Height(titleHeight).FillWidth().Gap(4).AlignItems(ui.Center).Children(func() {
+				ui.Text(c, name).FontSize(a.fontSize(12.5)).FontWeight(600).TextColor(t.Foreground).
+					Grow(1).MinWidth(0).SingleLine().Tooltip(name)
+				a.paneHeaderStatus(c, p.Status)
+			})
+			ui.Row(c).Height(detailHeight).FillWidth().Gap(6).AlignItems(ui.Center).Children(func() {
+				if p.Cwd == "" {
+					ui.Spacer(c)
+				} else {
+					ui.Text(c, herdr.ShortFolder(p.Cwd)).FontSize(a.fontSize(10.5)).TextColor(t.Muted).
+						Grow(1).MinWidth(0).SingleLine().TruncateMiddle().Tooltip(p.Cwd)
+				}
+				if hovered {
+					bounds := row.Bounds()
+					if bounds.W < 240 {
+						a.paneButton(c, "chevron-down", a.tr("Pane"), func() {
+							a.openMenuAt(bounds.X+bounds.W-30, bounds.Y+bounds.H, a.paneHeaderMenu(p))
+						})
+					} else {
+						a.paneHeaderButtons(c, p)
+					}
+				}
+			})
+		})
 	})
-	if row.Clicked() && !hovered {
+	if row.Clicked() {
 		a.S.FocusPane(p.Pane)
 	}
 	if row.RightClicked() {
 		x, y, _ := row.PointerPosition()
 		b := row.Bounds()
-		pane := p
-		a.openMenuAt(b.X+x, b.Y+y, []MenuItem{
-			{Label: a.tr("Copy terminal text"), Icon: "clipboard", Do: func() {
-				a.copyTerminalText(a.terminalFor(pane))
-			}},
-			{Label: a.tr("Find in terminal"), Icon: "search", Do: func() {
-				a.S.FocusPane(pane.Pane)
-				a.openFindFor(pane.Pane+"|"+pane.Terminal, a.terminalFor(pane))
-			}},
-			{Label: a.tr("Split right"), Icon: "split-right", Do: func() { a.splitPane(pane.Pane, "right") }},
-			{Label: a.tr("Split down"), Icon: "split-down", Do: func() { a.splitPane(pane.Pane, "down") }},
-			{Label: a.tr("Zoom"), Icon: "zoom", Do: func() { a.S.ZoomPane(pane.Pane) }},
-			{Label: a.tr("Close pane"), Icon: "close", Do: func() { a.requestClose("pane.close", pane.Pane) }},
+		a.openMenuAt(b.X+x, b.Y+y, a.paneHeaderMenu(p))
+	}
+}
+
+func (a *App) paneHeaderStatus(c *ui.Context, status string) {
+	t := a.T
+	switch status {
+	case "working":
+		label := a.tr("Working")
+		ui.Box(c).Size(18, 18).Shrink(0).Label(label).Tooltip(label).Center().Children(func() {
+			a.spinner(c, 12, t.Working)
+		})
+	case "blocked":
+		label := a.tr("Needs you")
+		ui.Box(c).Size(18, 18).Shrink(0).Label(label).Tooltip(label).Radius(5).
+			Background(Alpha(t.Blocked, 0.15)).Center().Children(func() {
+			a.icon(c, "bell", 11, t.Blocked)
+		})
+	case "done":
+		label := a.tr("Done")
+		ui.Box(c).Size(18, 18).Shrink(0).Label(label).Tooltip(label).Center().Children(func() {
+			ui.Box(c).Size(7, 7).Radius(4).Background(t.Done)
 		})
 	}
 }
 
-func (a *App) paneButton(c *ui.Context, icon string, action func()) {
+func (a *App) paneHeaderButtons(c *ui.Context, p herdr.PaneInfo) {
+	ui.Row(c).Gap(2).Shrink(0).Children(func() {
+		for _, item := range a.paneActions(p) {
+			a.paneButton(c, item.Icon, item.Label, item.Do)
+		}
+	})
+}
+
+func (a *App) paneActions(p herdr.PaneInfo) []MenuItem {
+	zoom := "zoom"
+	if p.Zoomed {
+		zoom = "unzoom"
+	}
+	return []MenuItem{
+		{Label: a.tr("Split right"), Icon: "split-right", Do: func() { a.splitPane(p.Pane, "right") }},
+		{Label: a.tr("Split down"), Icon: "split-down", Do: func() { a.splitPane(p.Pane, "down") }},
+		{Label: a.tr("Zoom pane"), Icon: zoom, Do: func() { a.S.ZoomPane(p.Pane) }},
+		{Label: a.tr("Close pane"), Icon: "close", Do: func() { a.requestClose("pane.close", p.Pane) }},
+	}
+}
+
+func (a *App) paneHeaderMenu(p herdr.PaneInfo) []MenuItem {
+	return append([]MenuItem{
+		{Label: a.tr("Copy terminal text"), Icon: "clipboard", Do: func() {
+			a.copyTerminalText(a.terminalFor(p))
+		}},
+		{Label: a.tr("Find in terminal"), Icon: "search", Do: func() {
+			a.S.FocusPane(p.Pane)
+			a.openFindFor(p.Pane+"|"+p.Terminal, a.terminalFor(p))
+		}},
+	}, a.paneActions(p)...)
+}
+
+func (a *App) paneButton(c *ui.Context, icon, label string, action func()) {
 	t := a.T
-	b := ui.Box(c).Padding(3).Radius(4)
+	b := ui.Box(c).Size(22, 20).Radius(4).Center().Label(label).Tooltip(label)
 	if b.Hovered() {
 		b.Background(t.Hover)
 	}
@@ -1044,7 +1095,7 @@ func (a *App) paneButton(c *ui.Context, icon string, action func()) {
 		if b.Hovered() {
 			color = t.Foreground
 		}
-		a.icon(c, icon, 14, color)
+		a.icon(c, icon, 13, color)
 	})
 	if b.Clicked() {
 		action()
