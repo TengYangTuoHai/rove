@@ -48,23 +48,35 @@ func TestPaneHeaderLayout(t *testing.T) {
 			}
 			title, folder := bounds(pane.Title), bounds(pane.Cwd)
 			status, terminal := bounds(tc.statusLabel), bounds("Terminal surface")
+			centerY := terminal.Y / 2
 			if title.X != folder.X || title.Y+title.H > folder.Y || folder.Y+folder.H > terminal.Y ||
-				title.X+title.W > status.X || status.X+status.W > float32(tc.width) {
+				max(title.X+title.W, folder.X+folder.W) > status.X || status.X+status.W > float32(tc.width) {
 				t.Fatalf("header overlaps or overflows: title %v, folder %v, status %v, terminal %v",
 					title, folder, status, terminal)
+			}
+			if status.Y+status.H/2 != centerY {
+				t.Errorf("status %v is not centered at %v", status, centerY)
 			}
 			if _, ok := tt.Find(tc.control); ok {
 				t.Fatal("pane controls show before hover")
 			}
 			tt.Move(15, 12)
 			tt.Frame()
-			control := bounds(tc.control)
-			if control.Y < title.Y+title.H || control.Y+control.H > terminal.Y ||
-				control.X+control.W > float32(tc.width) || control.X < bounds(pane.Cwd).X+bounds(pane.Cwd).W {
-				t.Fatalf("hover controls overlap or overflow: %v", control)
+			hoverTitle, hoverFolder := bounds(pane.Title), bounds(pane.Cwd)
+			controls := []string{tc.control}
+			if tc.control == "Split right" {
+				controls = append(controls, "Split down", "Zoom pane", "Close pane")
 			}
-			if bounds(pane.Title) != title || bounds(tc.statusLabel) != status {
-				t.Fatal("hover moves the title or status")
+			left := max(hoverTitle.X+hoverTitle.W, hoverFolder.X+hoverFolder.W)
+			for _, label := range controls {
+				control := bounds(label)
+				if control.Y+control.H/2 != centerY || control.X < left || control.X+control.W > status.X {
+					t.Errorf("control %q is not centered at %v or overlaps another element: %v", label, centerY, control)
+				}
+				left = control.X + control.W
+			}
+			if hoverTitle.Y != title.Y || hoverFolder.Y != folder.Y || bounds(tc.statusLabel) != status {
+				t.Fatal("hover changes text height or moves the status")
 			}
 		})
 	}

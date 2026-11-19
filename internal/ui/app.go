@@ -982,41 +982,40 @@ func (a *App) paneHeader(c *ui.Context, p herdr.PaneInfo) {
 		FillWidth().Background(t.Background).Padding(2, 8, 2, 8).
 		Gap(8).AlignItems(ui.Center).Clip().Cursor(ui.CursorPointer)
 	hovered := row.Hovered()
+	bounds := row.Bounds()
 	name := p.Title
 	if name == "" {
 		name = "shell"
 	}
 	row.Children(func() {
-		if p.Terminal != "" {
+		// At the smallest widths, leave room for the menu and status on hover.
+		if p.Terminal != "" && (!hovered || bounds.W >= 120) {
 			ui.Box(c).Size(26, 26).Shrink(0).Radius(7).Background(t.Raised).Center().Children(func() {
 				a.programIcon(c, p.Program, 14, t.Muted)
 			})
 		}
 		ui.Column(c).Grow(1).MinWidth(0).Children(func() {
-			ui.Row(c).Height(titleHeight).FillWidth().Gap(4).AlignItems(ui.Center).Children(func() {
+			ui.Row(c).Height(titleHeight).FillWidth().AlignItems(ui.Center).Children(func() {
 				ui.Text(c, name).FontSize(a.fontSize(12.5)).FontWeight(600).TextColor(t.Foreground).
 					Grow(1).MinWidth(0).SingleLine().Tooltip(name)
-				a.paneHeaderStatus(c, p.Status)
 			})
-			ui.Row(c).Height(detailHeight).FillWidth().Gap(6).AlignItems(ui.Center).Children(func() {
-				if p.Cwd == "" {
-					ui.Spacer(c)
-				} else {
+			ui.Row(c).Height(detailHeight).FillWidth().AlignItems(ui.Center).Children(func() {
+				if p.Cwd != "" {
 					ui.Text(c, herdr.ShortFolder(p.Cwd)).FontSize(a.fontSize(10.5)).TextColor(t.Muted).
 						Grow(1).MinWidth(0).SingleLine().TruncateMiddle().Tooltip(p.Cwd)
 				}
-				if hovered {
-					bounds := row.Bounds()
-					if bounds.W < 240 {
-						a.paneButton(c, "chevron-down", a.tr("Pane"), func() {
-							a.openMenuAt(bounds.X+bounds.W-30, bounds.Y+bounds.H, a.paneHeaderMenu(p))
-						})
-					} else {
-						a.paneHeaderButtons(c, p)
-					}
-				}
 			})
 		})
+		if hovered {
+			if bounds.W < 240 {
+				a.paneButton(c, "chevron-down", a.tr("Pane"), func() {
+					a.openMenuAt(bounds.X+bounds.W-30, bounds.Y+bounds.H, a.paneHeaderMenu(p))
+				})
+			} else {
+				a.paneHeaderButtons(c, p)
+			}
+		}
+		a.paneHeaderStatus(c, p.Status)
 	})
 	if row.Clicked() {
 		a.S.FocusPane(p.Pane)
